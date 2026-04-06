@@ -29,7 +29,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useCollection, useMemoFirebase, useUser, addDocumentNonBlocking, useFirestore, useDoc } from '@/firebase';
-import { collection, query, where, limit, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy, doc, addDoc } from 'firebase/firestore';
 import { Order, UserProfile, Role } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -137,6 +137,47 @@ export default function AdminDashboard() {
   ];
 
 
+  const seedData = async () => {
+    if (!user) return;
+    setIsSeeding(true);
+    try {
+      // Add a dummy user
+      await addDoc(collection(db, 'users'), {
+        uid: 'test-user-123',
+        email: 'test@example.com',
+        name: 'Test User',
+        createdAt: new Date().toISOString(),
+        role: 'Customer'
+      });
+
+      // Add a dummy order
+      await addDoc(collection(db, 'orders'), {
+        customerId: 'test-user-123',
+        customerEmail: 'test@example.com',
+        status: 'Submitted',
+        total: 150.00,
+        createdAt: new Date().toISOString(),
+        items: [],
+        shippingAddress: { name: 'Test User', street: '123 Test St', city: 'Testville', state: 'TS', zip: '12345', country: 'US' }
+      });
+
+      // Add a dummy ticket
+      await addDoc(collection(db, 'support_tickets'), {
+        customerEmail: 'test@example.com',
+        category: 'Order Issue',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        messages: []
+      });
+
+      toast({ title: 'Test data seeded!' });
+    } catch (e: any) {
+      toast({ title: 'Error seeding data', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   if (ordersError) {
     return (
       <div className="space-y-6">
@@ -173,6 +214,10 @@ export default function AdminDashboard() {
               <SelectItem value="Daily" className="text-[10px] font-bold uppercase">Last 24 Hours</SelectItem>
             </SelectContent>
           </Select>
+          <Button onClick={seedData} disabled={isSeeding} variant="outline" className="h-10 rounded-xl font-bold uppercase text-[10px] tracking-widest">
+            {isSeeding ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Database className="h-3.5 w-3.5 mr-2" />}
+            Seed Data
+          </Button>
           <Button asChild className="h-10 rounded-xl font-bold uppercase text-[10px] tracking-widest">
             <Link href="/admin/orders/new">
               <Printer className="h-3.5 w-3.5 mr-2" />
