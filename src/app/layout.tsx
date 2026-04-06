@@ -9,22 +9,9 @@ import { ClientLayout } from "./client-layout";
 const DEFAULT_FAVICON = "/favicon.ico";
 
 export async function generateMetadata(): Promise<Metadata> {
-  let faviconUrl = DEFAULT_FAVICON;
-  try {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-    const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
-    const docRef = doc(db, 'settings', 'appearance');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      faviconUrl = docSnap.data().faviconUrl || DEFAULT_FAVICON;
-    }
-  } catch (e) {
-    console.error("Error fetching favicon:", e);
-  }
-  
   return {
     icons: {
-      icon: faviconUrl,
+      icon: DEFAULT_FAVICON,
     },
   };
 }

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize Firebase Client (Idempotent)
     const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-    const dbId = (firebaseConfig as any).firestoreDatabaseId;
+    const dbId = "ai-studio-73577978-c57a-4d16-9fca-7a635e2af192";
     const db = getFirestore(app, dbId);
     
     const visitorRef = doc(collection(db, 'live_visitors'));
