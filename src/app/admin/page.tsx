@@ -47,22 +47,22 @@ export default function AdminDashboard() {
   const { data: roleData } = useDoc<Role>(roleRef);
 
   const allOrdersQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || !roleData) return null;
+    if (!user || !isStaff || !roleData) return null;
     return collection(db, 'orders');
-  }, [db, user, isStaff, isSyncing, roleData]);
+  }, [db, user, isStaff, roleData]);
 
   const allUsersQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || !roleData) return null;
+    if (!user || !isStaff || !roleData) return null;
     return collection(db, 'users');
-  }, [db, user, isStaff, isSyncing, roleData]);
+  }, [db, user, isStaff, roleData]);
 
   const { data: allOrders, isLoading: isOrdersLoading, error: ordersError } = useCollection<Order>(allOrdersQuery);
   const { data: allUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(allUsersQuery);
   
   const ticketsQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || !roleData) return null;
+    if (!user || !isStaff || !roleData) return null;
     return collection(db, 'support_tickets');
-  }, [db, user, isStaff, isSyncing, roleData]);
+  }, [db, user, isStaff, roleData]);
   const { data: allTickets, isLoading: isTicketsLoading } = useCollection<SupportTicket>(ticketsQuery);
 
   const metrics = useMemo(() => {
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
   ];
 
 
-  if (ordersError && !isSyncing) {
+  if (ordersError) {
     return (
       <div className="space-y-6">
         <Alert variant="destructive">
@@ -145,6 +145,8 @@ export default function AdminDashboard() {
           <AlertTitle>Administrative Access Error</AlertTitle>
           <AlertDescription>
             Firestore is unable to verify your administrative permissions. Please ensure your account is whitelisted or refresh the page.
+            <br />
+            Error Details: {ordersError.message}
           </AlertDescription>
         </Alert>
       </div>
@@ -193,7 +195,7 @@ export default function AdminDashboard() {
                 <Icon className={cn("h-4 w-4", stat.color)} />
               </CardHeader>
               <CardContent className="pt-4">
-                {isOrdersLoading || isUsersLoading || isSyncing ? (
+                {isOrdersLoading || isUsersLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 ) : (
                   <>

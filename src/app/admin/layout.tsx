@@ -133,24 +133,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // REGISTRY ALERT QUERIES
   const newOrdersQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || (!roleData && !isDev)) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return query(collection(db, 'orders'), where('status', '==', 'Submitted'), limit(100));
-  }, [db, user, isStaff, isSyncing, roleData, isDev]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const newTicketsQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || (!roleData && !isDev)) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return query(collection(db, 'support_tickets'), where('status', '==', 'open'), limit(100));
-  }, [db, user, isStaff, isSyncing, roleData, isDev]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const newLeadsQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || (!roleData && !isDev)) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return query(collection(db, 'partner_leads'), where('status', '==', 'New'), limit(100));
-  }, [db, user, isStaff, isSyncing, roleData, isDev]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const activeSharesQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || isSyncing || (!roleData && !isDev)) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return query(collection(db, 'shareable_links'), where('isActive', '==', true), limit(100));
-  }, [db, user, isStaff, isSyncing, roleData, isDev]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const { data: newOrders } = useCollection<Order>(newOrdersQuery);
   const { data: newTickets } = useCollection<SupportTicket>(newTicketsQuery);
@@ -469,22 +469,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </header>
 
           <main className="flex-1 p-4 md:p-8 lg:p-12">
-            {isSyncing ? (
-              <div className="flex h-[60vh] flex-col items-center justify-center gap-6 text-center animate-in fade-in duration-1000">
-                <div className="relative">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-black uppercase italic tracking-tight">Syncing Security</h3>
-                  <p className="max-w-xs text-xs font-medium text-muted-foreground uppercase leading-relaxed tracking-widest">Verifying administrative clearance with the society database.</p>
-                </div>
-              </div>
-            ) : (
-              children
-            )}
+            {children}
           </main>
         </div>
 
