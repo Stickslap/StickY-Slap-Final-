@@ -45,7 +45,7 @@ import { collection, query, where, doc, limit, getDocs } from 'firebase/firestor
 import { ShippingOption, ShippingSettings, Order, CheckoutSettings, UserProfile, EmailTemplate, ShippingEstimate } from '@/lib/types';
 import { calculateEstimate } from '@/lib/shipping-utils';
 import { dispatchSocietyEmail } from '@/app/actions/email';
-import { processSquarePayment } from '@/app/actions/payments';
+import { createPaymentLink } from '@/app/actions/payments';
 import Image from 'next/image';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -100,11 +100,6 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [activeDiscount, setActiveDiscount] = useState<any>(null);
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
-
-  const [squareCard, setSquareCard] = useState<any>(null);
-  const [isSquareLoading, setIsSquareLoading] = useState(true);
-  const squareInitialized = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -183,52 +178,6 @@ export default function CheckoutPage() {
     };
   }, [cartItems, shippingOptions, selectedShippingId, isCreditApplied, profile?.storeCredit, activeDiscount]);
 
-  useEffect(() => {
-    if (!isMounted || cartItems.length === 0 || squareInitialized.current) return;
-    
-    let card: any;
-    const initSquare = async () => {
-      const container = containerRef.current;
-      if (!container) return;
-      
-      if (!window.Square) {
-        console.warn("Square SDK not loaded yet, retrying...");
-        setTimeout(initSquare, 500);
-        return;
-      }
-      
-      try {
-        console.log("Initializing Square payments...");
-        const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
-        
-        card = await payments.card({
-          style: {
-            input: {
-              fontSize: '16px',
-              color: '#333',
-            },
-          },
-        });
-        await card.attach(container);
-        setSquareCard(card);
-        squareInitialized.current = true;
-        
-        setIsSquareLoading(false);
-      } catch (e) {
-        console.error("Square Vault Initialization Error:", e);
-        setIsSquareLoading(false);
-      }
-    };
-    
-    initSquare();
-
-    return () => {
-      if (card) {
-        card.destroy();
-        squareInitialized.current = false;
-      }
-    };
-  }, [isMounted, cartItems.length]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -378,57 +327,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (pricing.total > 0 && !squareCard) {
-      toast({ title: "Payment Engine Offline", variant: "destructive" });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const newOrderRef = doc(collection(db, 'orders'));
       const orderId = newOrderRef.id;
       const orderNumber = orderId.slice(0, 8);
       const finalName = user?.displayName || `${identity.firstName} ${identity.lastName}`;
-
-      let sourceId = 'none';
-      let paymentResult = { success: true, paymentId: 'zero_total' };
-      let paymentMethodName = pricing.total === 0 ? 'Society Credit' : 'Square (Card)';
-
-      if (pricing.total > 0) {
-        const tokenizeResult = await squareCard.tokenize();
-        if (tokenizeResult.status !== "OK") {
-          toast({ title: "Vault Error", description: tokenizeResult.errors?.[0]?.message || "Card validation failed.", variant: "destructive" });
-          setIsSubmitting(false);
-          return;
-        }
-        sourceId = tokenizeResult.token;
-        paymentMethodName = 'Square (Card)';
-
-        const pResult = await processSquarePayment({
-          sourceId,
-          amount: Math.round(pricing.total * 100),
-          currency: "USD",
-          idempotencyKey: `idempotency-${orderId}`, 
-          customerEmail: user?.email || identity.email,
-          orderNote: `Society Order #${orderNumber} - ${finalName}`,
-          referenceId: orderId,
-          shippingAddress: {
-            addressLine1: shippingAddress.street,
-            locality: shippingAddress.city,
-            administrativeDistrictLevel1: shippingAddress.state,
-            postalCode: shippingAddress.zip,
-            firstName: (user?.displayName || identity.firstName).split(' ')[0],
-            lastName: (user?.displayName || identity.lastName).split(' ').slice(1).join(' ') || 'Member'
-          }
-        });
-
-        if (!pResult.success) {
-          toast({ title: "Transaction Denied", description: pResult.error, variant: "destructive" });
-          setIsSubmitting(false);
-          return;
-        }
-        paymentResult = pResult;
-      }
 
       let finalUserId = user?.uid;
       let finalEmail = user?.email || identity.email;
@@ -451,7 +355,7 @@ export default function CheckoutPage() {
       const orderData: any = {
         userId: finalUserId || null, 
         customerEmail: finalEmail || null, 
-        status: 'Submitted',
+        status: 'PendingPayment',
         items: cartItems.map(item => ({
           productId: item.productId || null,
           productName: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
@@ -472,13 +376,12 @@ export default function CheckoutPage() {
           method: selectedOption.name,
           phone: identity.phone
         },
-        paymentMethod: paymentMethodName,
+        paymentMethod: 'Square (Link)',
         checkoutInfo: { 
           ...customFieldsData, 
           smsConsent: agreements.sms, 
           proofingRequested: requestProof, 
-          appliedDiscountId: activeDiscount?.id || null,
-          squarePaymentId: paymentResult.paymentId || null
+          appliedDiscountId: activeDiscount?.id || null
         },
         estimate: shippingEstimates[selectedShippingId] ? {
           ...shippingEstimates[selectedShippingId],
@@ -488,29 +391,27 @@ export default function CheckoutPage() {
         updatedAt: new Date().toISOString(),
       };
 
-      if (pricing.creditValue > 0 && finalUserId) {
-        updateDocumentNonBlocking(doc(db, 'users', finalUserId), {
-          storeCredit: (profile?.storeCredit || 0) - pricing.creditValue,
-          updatedAt: new Date().toISOString()
-        });
-      }
-
       setDocumentNonBlocking(newOrderRef, orderData, { merge: true });
-      
-      const template = templates?.find(t => t.trigger === 'order_confirmed' && t.enabled);
-      if (template) {
-        dispatchSocietyEmail(template, finalEmail, {
-          customer_name: finalName.split(' ')[0],
-          order_id: orderNumber,
-          order_status: 'Submitted',
-          order_total: pricing.total.toFixed(2),
-          order_link: `${window.location.origin}/track?id=${newOrderRef.id}`
+
+      if (pricing.total > 0) {
+        const paymentLinkResult = await createPaymentLink({
+          amount: pricing.total,
+          currency: "USD",
+          idempotencyKey: `idempotency-${orderId}`,
+          orderId: orderNumber,
+          customerEmail: finalEmail,
+          redirectUrl: `${window.location.origin}/checkout/success?id=${orderId}&email=${finalEmail}`
         });
+
+        if (!paymentLinkResult.success || !paymentLinkResult.url) {
+          throw new Error(paymentLinkResult.error || "Failed to create payment link.");
+        }
+
+        window.location.href = paymentLinkResult.url;
+        return; // Redirecting
       }
 
-      toast({ title: "Order Confirmed!" });
-      sessionStorage.removeItem('society_cart');
-      sessionStorage.removeItem('pending_checkout');
+      // Handle zero total
       router.push(`/checkout/success?id=${newOrderRef.id}&email=${finalEmail}`);
     } catch (e: any) { 
       logError(e, 'Checkout Submission');
@@ -647,14 +548,10 @@ export default function CheckoutPage() {
                 <h2 className="text-2xl font-black uppercase italic tracking-tighter">Payment</h2>
                 <div className="p-4 sm:p-8 border-2 rounded-[2rem] bg-muted/5 space-y-6">
                   {pricing.total > 0 ? (
-                    <>
-                      <div ref={containerRef} className={cn("min-h-[70px] h-full bg-background border-2 rounded-xl p-2 sm:p-4 w-full flex items-center justify-center", isSquareLoading ? "opacity-20" : "")} />
-                      {isSquareLoading && <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
-                      <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-2 px-2">
-                        <Lock className="h-3 w-3 shrink-0" />
-                        <span>Sticky Slap does not save your credit card information. Payments are Secure by Square.</span>
-                      </div>
-                    </>
+                    <div className="p-6 bg-muted/10 border-2 border-muted/20 rounded-xl text-center">
+                      <p className="font-bold uppercase tracking-tight">Proceed to secure payment</p>
+                      <p className="text-xs text-muted-foreground mt-1">You will be redirected to Square to complete your payment.</p>
+                    </div>
                   ) : (
                     <div className="p-6 bg-emerald-50 border-2 border-emerald-100 rounded-xl text-center">
                       <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
@@ -678,7 +575,7 @@ export default function CheckoutPage() {
               <Button 
                 className="w-full h-20 text-xl font-black uppercase tracking-widest rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all active:scale-[0.98]" 
                 onClick={handleSubmit} 
-                disabled={isSubmitting || (pricing.total > 0 && isSquareLoading) || !agreements.terms || !agreements.artwork || shippingOptions.length === 0}
+                disabled={isSubmitting || !agreements.terms || !agreements.artwork || shippingOptions.length === 0}
               >
                 {isSubmitting ? <Loader2 className="h-8 w-8 animate-spin" /> : <>Complete Order —</>}
               </Button>

@@ -41,57 +41,46 @@ interface ProcessPaymentData {
  * Explicitly uses Location ID L2SFYZ87NJK49 for correct branch routing.
  * Note: Square returns a 400 error if amount is 0.
  */
-export async function processSquarePayment(data: ProcessPaymentData) {
+export async function createPaymentLink(data: {
+  amount: number;
+  currency: string;
+  idempotencyKey: string;
+  orderId: string;
+  customerEmail: string;
+  redirectUrl: string;
+}) {
   try {
     if (!process.env.SQUARE_ACCESS_TOKEN) {
-      throw new Error('SQUARE_ACCESS_TOKEN is not configured in the registry.');
+      throw new Error('SQUARE_ACCESS_TOKEN is not configured.');
     }
 
-    if (data.amount <= 0) {
-      return { 
-        success: false, 
-        error: 'Amount must be greater than zero for card processing.' 
-      };
-    }
-    
-    // We must supply the EXACT Location ID the Application ID is tied to.
     const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || 'L2SFYZ87NJK49';
 
-    const response = await paymentsApi.createPayment({
-      sourceId: data.sourceId,
+    const response = await client.checkoutApi.createPaymentLink({
       idempotencyKey: data.idempotencyKey,
-      amountMoney: {
-        amount: BigInt(data.amount),
-        currency: data.currency
+      checkoutOptions: {
+        ask_for_shipping_address: true,
+        redirectUrl: data.redirectUrl,
+        merchantSupportEmail: "STICKY@STICKYSLAP.COM"
       },
-      locationId: locationId, // Routing transaction to physical branch
-      buyerEmailAddress: data.customerEmail,
-      note: data.orderNote,
-      referenceId: data.referenceId,
-      shippingAddress: data.shippingAddress ? {
-        addressLine1: data.shippingAddress.addressLine1,
-        locality: data.shippingAddress.locality,
-        administrativeDistrictLevel1: data.shippingAddress.administrativeDistrictLevel1,
-        postalCode: data.shippingAddress.postalCode,
-        firstName: data.shippingAddress.firstName,
-        lastName: data.shippingAddress.lastName,
-      } : undefined
+      quickPay: {
+        locationId: locationId,
+        name: `Order #${data.orderId}`,
+        priceMoney: {
+          amount: BigInt(Math.round(data.amount)),
+          currency: data.currency
+        }
+      }
     });
 
-    // We must serialize BigInt values for JSON safety across the boundary
-    const payment = JSON.parse(JSON.stringify(response.result.payment, (key, value) => 
-      typeof value === 'bigint' ? value.toString() : value
-    ));
-
-    return { 
-      success: true, 
-      paymentId: payment.id,
-      status: payment.status 
+    return {
+      success: true,
+      url: response.result.paymentLink?.url
     };
   } catch (error: any) {
-    logError(error, 'Square Transaction');
-    return { 
-      success: false, 
+    logError(error, 'Square Payment Link Creation');
+    return {
+      success: false,
       error: getFriendlyErrorMessage(error)
     };
   }
