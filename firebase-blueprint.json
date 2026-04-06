@@ -1,0 +1,82 @@
+
+{
+  "entities": {
+    "LiveVisitor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LiveVisitor",
+      "type": "object",
+      "description": "Represents a real-time visitor event logged for the 'Live View' admin dashboard feature, including geolocation and page visited.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LiveVisitor entity."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "The IP address of the visitor."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the page the visitor is currently viewing.",
+          "format": "uri"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The geographic latitude coordinate of the visitor's location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The geographic longitude coordinate of the visitor's location."
+        },
+        "city": {
+          "type": "string",
+          "description": "The city corresponding to the visitor's IP address."
+        },
+        "postalCode": {
+          "type": "string",
+          "description": "The postal or zip code corresponding to the visitor's IP address."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The server-side timestamp when the visitor event was logged.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ipAddress",
+        "url",
+        "latitude",
+        "longitude",
+        "city",
+        "postalCode",
+        "timestamp"
+      ]
+    },
+    "Role": {
+      "title": "Role",
+      "type": "object",
+      "description": "Staff authorization registry entry.",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["Owner", "Admin", "Ops Manager", "Production", "Support", "Content", "Read-only", "Customer", "Vendor"] }
+      }
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "live_visitors": {
+      "schema": { "$ref": "#/backend/entities/LiveVisitor" },
+      "description": "Real-time visitor telemetry log."
+    },
+    "roles/{userId}": {
+      "schema": { "$ref": "#/backend/entities/Role" },
+      "description": "Unified staff clearance registry."
+    }
+  }
+}

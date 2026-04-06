@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "hand_cup": "https://picsum.photos/seed/handcup/800/800",
+    "hint": "hand holding cup sticker"
+  },
+  "gallery": [
+    { "id": "g1", "url": "https://picsum.photos/seed/sticker1/800/600", "hint": "sticker stack" },
+    { "id": "g2", "url": "https://picsum.photos/seed/sticker2/400/400", "hint": "custom sticker" },
+    { "id": "g3", "url": "https://picsum.photos/seed/sticker3/400/400", "hint": "round sticker" },
+    { "id": "g4", "url": "https://picsum.photos/seed/sticker4/400/400", "hint": "square sticker" },
+    { "id": "g5", "url": "https://picsum.photos/seed/sticker5/400/400", "hint": "die cut sticker" },
+    { "id": "g6", "url": "https://picsum.photos/seed/sticker6/400/400", "hint": "glitter sticker" },
+    { "id": "g7", "url": "https://picsum.photos/seed/sticker7/400/400", "hint": "holographic sticker" },
+    { "id": "g8", "url": "https://picsum.photos/seed/sticker8/400/400", "hint": "clear sticker" }
+  ],
+  "products": [
+    {
+      "id": "vinyl",
+      "url": "https://picsum.photos/seed/vinyl/400/400",
+      "hint": "vinyl sticker"
+    },
+    {
+      "id": "holographic",
+      "url": "https://picsum.photos/seed/holo/400/400",
+      "hint": "holographic sticker"
+    },
+    {
+      "id": "glitter",
+      "url": "https://picsum.photos/seed/glitter/400/400",
+      "hint": "glitter sticker"
+    },
+    {
+      "id": "chrome",
+      "url": "https://picsum.photos/seed/chrome/400/400",
+      "hint": "chrome sticker"
+    },
+    {
+      "id": "clear",
+      "url": "https://picsum.photos/seed/clear/400/400",
+      "hint": "clear sticker"
+    },
+    {
+      "id": "economy",
+      "url": "https://picsum.photos/seed/economy/400/400",
+      "hint": "circle sticker"
+    },
+    {
+      "id": "bumper",
+      "url": "https://picsum.photos/seed/bumper/400/400",
+      "hint": "bumper sticker"
+    },
+    {
+      "id": "qr",
+      "url": "https://picsum.photos/seed/qr/400/400",
+      "hint": "qr code"
+    },
+    {
+      "id": "sheets",
+      "url": "https://picsum.photos/seed/sheets/400/400",
+      "hint": "sticker sheet"
+    }
+  ]
+}
