@@ -1,8 +1,90 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Admin' ||
+        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Staff' ||
+        (request.auth.token.email == "sticky@stickyslap.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    // Publicly readable collections
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /products/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blogs/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /faqs/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /team/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User profiles and roles
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /roles/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Orders and Tickets
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.customerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.customerId == request.auth.uid || isAdmin());
+    }
+
+    match /support_tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow create: if true; // Allow guests to create tickets
+      allow update: if isAdmin();
+    }
+
+    match /partner_leads/{leadId} {
+      allow read: if isAdmin();
+      allow create: if true; // Public can submit leads
+      allow update: if isAdmin();
+    }
+
+    match /shareable_links/{linkId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Default deny
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
   }
 }
