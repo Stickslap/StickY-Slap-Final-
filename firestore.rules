@@ -9,9 +9,10 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Admin' ||
-        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Staff' ||
-        (request.auth.token.email == "sticky@stickyslap.com" && request.auth.token.email_verified == true)
+        request.auth.token.email == "sticky@stickyslap.com" ||
+        (exists(/databases/$(database)/documents/roles/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Admin' ||
+          get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Staff'))
       );
     }
 
@@ -26,6 +27,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /gallery {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /gallery/{document=**} {
       allow read: if true;
       allow write: if isAdmin();

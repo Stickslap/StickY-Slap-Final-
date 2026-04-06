@@ -88,10 +88,11 @@ function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
     // In this case, we'll proceed without auth information.
   }
 
+  // We don't have the exact database ID here easily, so we use a placeholder that indicates it might be a named database
   return {
     auth: authObject,
     method: context.operation,
-    path: `/databases/(default)/documents/${context.path}`,
+    path: `/databases/{database}/documents/${context.path}`,
     resource: context.requestResourceData ? { data: context.requestResourceData } : undefined,
   };
 }

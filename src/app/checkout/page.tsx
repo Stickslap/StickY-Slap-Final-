@@ -189,7 +189,13 @@ export default function CheckoutPage() {
     let card: any;
     const initSquare = async () => {
       const container = containerRef.current;
-      if (!container || !window.Square) return;
+      if (!container) return;
+      
+      if (!window.Square) {
+        console.warn("Square SDK not loaded yet, retrying...");
+        setTimeout(initSquare, 500);
+        return;
+      }
       
       try {
         console.log("Initializing Square payments...");
@@ -222,7 +228,7 @@ export default function CheckoutPage() {
         squareInitialized.current = false;
       }
     };
-  }, [isMounted, cartItems.length, undefined, undefined]);
+  }, [isMounted, cartItems.length]);
 
   useEffect(() => {
     if (!isMounted) return;

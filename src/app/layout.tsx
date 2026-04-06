@@ -1,9 +1,6 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { initializeApp, getApps } from 'firebase/app';
-import firebaseConfig from '../../firebase-applet-config.json';
 import { ClientLayout } from "./client-layout";
 
 const DEFAULT_FAVICON = "/favicon.ico";
