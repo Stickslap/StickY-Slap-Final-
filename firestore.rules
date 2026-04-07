@@ -81,9 +81,10 @@ service cloud.firestore {
 
     // Orders and Tickets
     match /orders/{orderId} {
-      allow read: if isAuthenticated() && (resource.data.customerId == request.auth.uid || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.customerId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /support_tickets/{ticketId} {
