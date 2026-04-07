@@ -77,9 +77,10 @@ export default function MyOrdersPage() {
     );
 
     return sorted.filter(order => 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.status !== 'PendingPayment' &&
+      (order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.items.some(i => i.productName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [orders, searchTerm]);
 

@@ -66,6 +66,7 @@ export async function createPaymentLink(data: {
       },
       order: {
         locationId: locationId,
+        referenceId: data.orderId, // Add referenceId for webhook mapping
         lineItems: data.items.map(item => ({
           name: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
           quantity: Number(item.quantity).toString(),
