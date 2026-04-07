@@ -37,7 +37,7 @@ import { collection, doc } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { TeamSettings, TeamMember, AboutSettings, ContactSettings } from '@/lib/types';
 
-const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 
 const FALLBACK_TEAM: TeamMember[] = [
   { id: '1', name: "Alex Rivet", role: "Master Printer", bio: "15 years of vinyl expertise.", imageUrl: "https://picsum.photos/seed/member-0/600/800", order: 0 },

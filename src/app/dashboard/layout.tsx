@@ -31,7 +31,7 @@ import { doc, collection, query, where, getDocs, limit } from 'firebase/firestor
 import { cn } from '@/lib/utils';
 import { UserProfile } from '@/lib/types';
 
-const LOGO_URL = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const LOGO_URL = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

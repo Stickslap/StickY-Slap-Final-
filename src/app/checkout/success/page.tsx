@@ -33,7 +33,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from '@/hooks/use-toast';
 
-const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 
 function ConfirmationContent({ orderId, email }: { orderId: string | null, email: string | null }) {
   const db = useFirestore();

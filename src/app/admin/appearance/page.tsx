@@ -30,7 +30,7 @@ import Image from 'next/image';
 import { addDocumentNonBlocking } from '@/firebase';
 import { cn } from '@/lib/utils';
 
-const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 const CLOUDINARY_CLOUD_NAME = "dabgothkm";
 const CLOUDINARY_UPLOAD_PRESET = "unsigned_upload";
 

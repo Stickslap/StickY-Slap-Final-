@@ -35,7 +35,7 @@ import Header from '@/components/header';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-const LOGO_URL = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const LOGO_URL = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Valid email required.' }),

@@ -68,7 +68,7 @@ const DEFAULT_SETTINGS: ShippingSettings = {
   timezone: 'America/New_York'
 };
 
-const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1772217426/arlington-teheran-WL-oIapq6TY-unsplash_dps0i1.png";
+const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 const DEFAULT_THUMBNAIL = "https://picsum.photos/seed/society-item/400/400";
 
 export default function CheckoutPage() {
