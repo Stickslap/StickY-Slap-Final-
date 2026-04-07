@@ -400,7 +400,8 @@ export default function CheckoutPage() {
           idempotencyKey: `idempotency-${orderId}`,
           orderId: orderNumber,
           customerEmail: finalEmail,
-          redirectUrl: `${window.location.origin}/checkout/success?id=${orderId}&email=${finalEmail}`
+          redirectUrl: `${window.location.origin}/checkout/success?id=${orderId}&email=${finalEmail}`,
+          items: cartItems
         });
 
         if (!paymentLinkResult.success || !paymentLinkResult.url) {

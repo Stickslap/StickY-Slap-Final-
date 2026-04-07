@@ -48,6 +48,7 @@ export async function createPaymentLink(data: {
   orderId: string;
   customerEmail: string;
   redirectUrl: string;
+  items: any[];
 }) {
   try {
     if (!process.env.SQUARE_ACCESS_TOKEN) {
@@ -63,13 +64,17 @@ export async function createPaymentLink(data: {
         redirectUrl: data.redirectUrl,
         merchantSupportEmail: "STICKY@STICKYSLAP.COM"
       },
-      quickPay: {
+      order: {
         locationId: locationId,
-        name: `Order #${data.orderId}`,
-        priceMoney: {
-          amount: BigInt(Math.round(data.amount)),
-          currency: data.currency
-        }
+        lineItems: data.items.map(item => ({
+          name: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
+          quantity: Number(item.quantity).toString(),
+          basePriceMoney: {
+            amount: BigInt(Math.round((Number(item.pricePerUnit) || 0) * 100)),
+            currency: data.currency
+          },
+          note: Object.entries(item.selectedOptions || {}).map(([k, v]) => `${k}: ${v}`).join(', ')
+        }))
       }
     });
 
@@ -78,6 +83,10 @@ export async function createPaymentLink(data: {
       url: response.result.paymentLink?.url
     };
   } catch (error: any) {
+    console.error('Full Square API Error:', JSON.stringify(error, error instanceof Error ? Object.getOwnPropertyNames(error) : error, 2));
+    if (error.errors) {
+      console.error('Square API Errors:', JSON.stringify(error.errors, null, 2));
+    }
     logError(error, 'Square Payment Link Creation');
     return {
       success: false,
