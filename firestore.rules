@@ -46,6 +46,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /blog_posts/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /faqs/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
@@ -82,7 +87,8 @@ service cloud.firestore {
     }
 
     match /support_tickets/{ticketId} {
-      allow read: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow list: if isAuthenticated();
       allow create: if true; // Allow guests to create tickets
       allow update: if isAdmin();
     }
