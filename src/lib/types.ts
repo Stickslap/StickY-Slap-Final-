@@ -54,6 +54,7 @@ export interface Role {
 
 export type OrderStatus = 
   | "Draft" 
+  | "PendingPayment"
   | "Submitted" 
   | "Proofing" 
   | "Approved" 

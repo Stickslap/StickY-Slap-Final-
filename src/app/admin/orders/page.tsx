@@ -88,7 +88,7 @@ const statusColors: Record<OrderStatus, string> = {
 };
 
 const ORDER_STATUSES: OrderStatus[] = [
-  "Submitted", "Proofing", "Approved", "Rejected", "In Production", "QC", "Ready", "Shipped", "Delivered", "Closed", "On Hold", "Cancelled", "Refunded"
+  "Draft", "PendingPayment", "Submitted", "Proofing", "Approved", "Rejected", "In Production", "QC", "Ready", "Shipped", "Delivered", "Closed", "On Hold", "Cancelled", "Refunded"
 ];
 
 function OrdersPageContent() {
