@@ -816,6 +816,21 @@ export interface PartnerLead {
   updatedAt?: string;
 }
 
+export interface ClientProof {
+  id: string;
+  customerEmail: string;
+  customerName?: string;
+  projectName: string;
+  fileUrl: string;
+  fileName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string;
+  rejectionReason?: string;
+  shareableLink?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface VendorProduct {
   id: string;
   vendorId: string;

@@ -220,6 +220,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       links: [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Orders', href: '/admin/orders', icon: Package },
+        { name: 'Proofs', href: '/admin/proofs', icon: FileText },
         { name: 'Customers', href: '/admin/customers', icon: Users },
         { name: 'Shipping', href: '/admin/shipping', icon: Truck },
         { name: 'Shareable Links', href: '/admin/shares', icon: Share },

@@ -82,14 +82,14 @@ service cloud.firestore {
     // Orders and Tickets
     match /orders/{orderId} {
       allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isAuthenticated();
+      allow list: if isAdmin();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /support_tickets/{ticketId} {
       allow get: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
-      allow list: if isAuthenticated();
+      allow list: if isAdmin();
       allow create: if true; // Allow guests to create tickets
       allow update: if isAdmin();
     }
@@ -108,6 +108,18 @@ service cloud.firestore {
     match /email_templates/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /client_proofs/{proofId} {
+      allow get: if true; // Publicly readable via direct link
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow public to update status and rejectionReason if currently pending
+      allow update: if isAdmin() || (
+        resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rejectionReason', 'updatedAt']) &&
+        (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
+      );
     }
 
     // Default deny
