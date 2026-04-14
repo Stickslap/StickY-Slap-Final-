@@ -63,7 +63,6 @@ const TRIGGERS: { value: EmailTemplateTrigger; label: string }[] = [
   { value: 'order_shipped', label: 'Carrier Dispatch' },
   { value: 'order_ready', label: 'Ready for Pickup' },
   { value: 'proof_reminder', label: 'Proof Expiry Reminder' },
-  { value: 'proof_ready', label: 'Proof Ready for Review' },
   { value: 'order_completed', label: 'Fulfillment Finalized' },
   { value: 'order_refunded', label: 'Refund Issued' },
   { value: 'order_cancelled', label: 'Order Cancelled' },
@@ -217,6 +216,13 @@ export function EmailEditorForm({ initialData, isNew }: EmailEditorProps) {
     if (targetIndex < 0 || targetIndex >= newBlocks.length) return;
     [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
     setData({ ...data, blocks: newBlocks });
+  };
+
+  const removeBlock = (id: string) => {
+    setData({
+      ...data,
+      blocks: data.blocks?.filter(b => b.id !== id)
+    });
   };
 
   const updateBlock = (id: string, updates: Partial<EmailBlock>) => {

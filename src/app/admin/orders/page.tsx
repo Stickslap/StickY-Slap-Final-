@@ -85,6 +85,7 @@ const statusColors: Record<OrderStatus, string> = {
   'On Hold': 'bg-orange-500',
   Cancelled: 'bg-rose-500',
   Refunded: 'bg-red-700',
+  PendingPayment: 'bg-slate-400',
 };
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -99,7 +100,6 @@ function OrdersPageContent() {
   const { isStaff, isSyncing } = useAdmin();
   const [searchTerm, setSearchTerm] = useState(urlSearch);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All');
-  const [hideImports, setHideImports] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -258,9 +258,9 @@ function OrdersPageContent() {
     );
     
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-    const matchesImport = !hideImports || !order.metadata?.isImported;
+    const isImported = order.metadata?.isImported === true;
     
-    return matchesSearch && matchesStatus && matchesImport;
+    return matchesSearch && matchesStatus && !isImported;
   });
 
   const totalPages = Math.ceil((filteredOrders?.length || 0) / itemsPerPage);
@@ -572,13 +572,6 @@ function OrdersPageContent() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button 
-                variant={hideImports ? "outline" : "default"}
-                className="rounded-xl h-11 px-4 font-bold uppercase text-[10px] tracking-widest border-2"
-                onClick={() => setHideImports(!hideImports)}
-              >
-                {hideImports ? "Show Imports" : "Hide Imports"}
-              </Button>
             </div>
           </div>
         </CardHeader>

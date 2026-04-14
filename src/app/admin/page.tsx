@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { useCollection, useMemoFirebase, useUser, addDocumentNonBlocking, useFirestore, useDoc } from '@/firebase';
 import { collection, query, where, limit, orderBy, doc, addDoc } from 'firebase/firestore';
-import { Order, UserProfile, Role } from '@/lib/types';
+import { Order, UserProfile, Role, SupportTicket } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAdmin } from './layout';

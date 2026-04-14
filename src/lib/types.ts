@@ -101,7 +101,10 @@ export interface Order {
   estimate?: ShippingEstimate;
   shippedAt?: string;
   deliveredAt?: string;
-  metadata?: Record<string, any>;
+  metadata?: {
+    isImported?: boolean;
+    [key: string]: any;
+  };
 }
 
 export interface Proof {
@@ -719,6 +722,14 @@ export interface ShareableLink {
   description?: string;
 }
 
+export interface NewsletterSettings {
+  title: string;
+  description: string;
+  buttonText: string;
+  placeholder: string;
+  updatedAt: string;
+}
+
 export interface NewsletterSubscriber {
   id: string;
   email: string;
@@ -736,7 +747,6 @@ export type EmailTemplateTrigger =
   | 'order_shipped'
   | 'order_ready'
   | 'proof_reminder'
-  | 'proof_ready'
   | 'order_completed'
   | 'order_refunded'
   | 'order_cancelled'

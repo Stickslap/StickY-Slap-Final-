@@ -52,15 +52,18 @@ export default function PublicProofPage() {
   const handleApprove = async () => {
     if (!proof) return;
     setIsSubmitting(true);
+    console.log(`Attempting to approve proof: ${proof.id}`);
     try {
       await updateDoc(doc(db, 'client_proofs', proof.id), {
         status: 'approved',
         updatedAt: new Date().toISOString()
       });
+      console.log(`Proof ${proof.id} approved successfully`);
       setProof({ ...proof, status: 'approved' });
       toast({ title: 'Proof Approved', description: 'Thank you! Your approval has been recorded.' });
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      console.error(`Error approving proof ${proof.id}:`, err);
+      toast({ title: 'Error', description: `Failed to approve: ${err.message}`, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -74,17 +77,20 @@ export default function PublicProofPage() {
     }
     
     setIsSubmitting(true);
+    console.log(`Attempting to reject proof: ${proof.id}`);
     try {
       await updateDoc(doc(db, 'client_proofs', proof.id), {
         status: 'rejected',
         rejectionReason: rejectionNotes,
         updatedAt: new Date().toISOString()
       });
+      console.log(`Proof ${proof.id} rejected successfully`);
       setProof({ ...proof, status: 'rejected', rejectionReason: rejectionNotes });
       toast({ title: 'Proof Rejected', description: 'Your feedback has been sent to our team.' });
       setIsRejecting(false);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      console.error(`Error rejecting proof ${proof.id}:`, err);
+      toast({ title: 'Error', description: `Failed to reject: ${err.message}`, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -138,13 +144,34 @@ export default function PublicProofPage() {
           
           <CardContent className="p-0">
             <div className="relative w-full aspect-video bg-black/5 flex items-center justify-center overflow-hidden">
-              <Image 
-                src={proof.fileUrl} 
-                alt={`Proof for ${proof.projectName}`}
-                fill
-                className="object-contain"
-                referrerPolicy="no-referrer"
-              />
+              {proof.fileUrl.toLowerCase().endsWith('.pdf') ? (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8">
+                  {/* Cloudinary PDF Preview Transformation: change .pdf to .jpg */}
+                  <div className="relative w-full h-full max-h-[500px] shadow-2xl border rounded-lg overflow-hidden bg-white">
+                    <Image 
+                      src={proof.fileUrl.replace(/\.pdf$/i, '.jpg')} 
+                      alt={`PDF Preview for ${proof.projectName}`}
+                      fill
+                      className="object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        // If the JPG preview fails (e.g. not a Cloudinary URL or transformation failed), 
+                        // we could show a PDF icon or similar
+                        console.warn("PDF JPG preview failed, showing fallback");
+                      }}
+                    />
+                  </div>
+                  <p className="mt-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">PDF Document Preview</p>
+                </div>
+              ) : (
+                <Image 
+                  src={proof.fileUrl} 
+                  alt={`Proof for ${proof.projectName}`}
+                  fill
+                  className="object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              )}
             </div>
             
             <div className="p-8 space-y-6">

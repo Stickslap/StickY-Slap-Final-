@@ -40,9 +40,10 @@ import {
   addDocumentNonBlocking 
 } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { ProductTemplate, UserProfile, Order, OrderItem } from '@/lib/types';
+import { ProductTemplate, UserProfile, Order, OrderItem, ShippingDetails } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { useAdmin } from '../../layout';
+import Image from 'next/image';
 
 export default function NewManualOrderPage() {
   const router = useRouter();
@@ -127,6 +128,9 @@ export default function NewManualOrderPage() {
       pricing,
       shippingDetails: {
         address: shippingAddress || 'Standard Warehouse Pickup',
+        city: '',
+        state: '',
+        zip: '',
         method: shippingMethod,
       },
       createdAt: new Date().toISOString(),

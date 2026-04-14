@@ -44,6 +44,7 @@ const statusColors: Record<OrderStatus, string> = {
   'On Hold': 'bg-orange-500',
   Cancelled: 'bg-rose-500',
   Refunded: 'bg-red-700',
+  PendingPayment: 'bg-slate-400',
 };
 
 export default function MyOrdersPage() {
