@@ -158,14 +158,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: activeShares } = useCollection<ShareableLink>(activeSharesQuery);
 
   const getBadgeCount = (href: string) => {
-    if (href === '/admin/orders') return newOrders?.length || 0;
+    if (href === '/admin/orders') return newOrders?.filter(o => !o.metadata?.isImported).length || 0;
     if (href === '/admin/support') return newTickets?.length || 0;
     if (href === '/admin/partners') return newLeads?.length || 0;
     if (href === '/admin/shares') return activeShares?.length || 0;
     return 0;
   };
 
-  const notificationCount = (newOrders?.length || 0) + (newTickets?.length || 0) + (newLeads?.length || 0);
+  const realOrdersCount = newOrders?.filter(o => !o.metadata?.isImported).length || 0;
+  const notificationCount = realOrdersCount + (newTickets?.length || 0) + (newLeads?.length || 0);
 
   useEffect(() => {
     if (isMounted && !isUserLoading && !user) {
@@ -378,12 +379,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </DropdownMenuLabel>
                   <ScrollArea className="h-[300px]">
                     <div className="p-2">
-                      {newOrders && newOrders.length > 0 && (
+                      {newOrders && newOrders.filter(o => !o.metadata?.isImported).length > 0 && (
                         <div className="mb-4">
                           <p className="px-4 pb-2 text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
                             <Package className="h-3 w-3" /> New Order Intake
                           </p>
-                          {newOrders.map((order) => (
+                          {newOrders.filter(o => !o.metadata?.isImported).map((order) => (
                             <DropdownMenuItem key={order.id} asChild className="rounded-xl focus:bg-primary/5 cursor-pointer">
                               <Link href={`/admin/orders/${order.id}`} className="flex flex-col items-start gap-1 p-4">
                                 <div className="flex justify-between w-full">

@@ -101,6 +101,7 @@ export interface Order {
   estimate?: ShippingEstimate;
   shippedAt?: string;
   deliveredAt?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Proof {
@@ -735,6 +736,7 @@ export type EmailTemplateTrigger =
   | 'order_shipped'
   | 'order_ready'
   | 'proof_reminder'
+  | 'proof_ready'
   | 'order_completed'
   | 'order_refunded'
   | 'order_cancelled'

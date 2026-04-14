@@ -138,11 +138,12 @@ export default function PublicProofPage() {
           
           <CardContent className="p-0">
             <div className="relative w-full aspect-video bg-black/5 flex items-center justify-center overflow-hidden">
-              {/* Using standard img tag for external URLs that might not be configured in Next.js domains */}
-              <img 
+              <Image 
                 src={proof.fileUrl} 
                 alt={`Proof for ${proof.projectName}`}
-                className="max-w-full max-h-[70vh] object-contain"
+                fill
+                className="object-contain"
+                referrerPolicy="no-referrer"
               />
             </div>
             

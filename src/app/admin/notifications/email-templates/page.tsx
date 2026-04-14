@@ -157,6 +157,23 @@ export default function EmailTemplatesPage() {
           { id: 'b2', type: 'text', content: 'Your production proof has been authorized. The project is now moving to the manufacturing queue.', alignment: 'left' },
           { id: 'b3', type: 'button', label: 'Track Production —', link: '{{order_link}}', alignment: 'center' }
         ]
+      },
+      {
+        name: 'Proof Ready for Review',
+        trigger: 'proof_ready',
+        subject: 'Action Required: Your Proof for {{project_name}} is Ready',
+        previewText: 'Please review and approve your artwork proof.',
+        senderName: 'Sticky Slap',
+        replyTo: 'lab@stickyslap.com',
+        enabled: true,
+        header: { bgColor: '#FFFFFF', logoUrl: LOGO_URL },
+        blocks: [
+          { id: 'b1', type: 'text', content: 'Hello {{customer_name}},', alignment: 'left' },
+          { id: 'b2', type: 'text', content: 'Your artwork proof for "{{project_name}}" is ready for your review. Please check the details carefully before approving for production.', alignment: 'left' },
+          { id: 'b3', type: 'artwork_preview' },
+          { id: 'b4', type: 'button', label: 'Review Proof —', link: '{{proof_link}}', alignment: 'center' },
+          { id: 'b5', type: 'text', content: 'If you need any changes, you can request them directly through the review link above.', alignment: 'left' }
+        ]
       }
     ];
 

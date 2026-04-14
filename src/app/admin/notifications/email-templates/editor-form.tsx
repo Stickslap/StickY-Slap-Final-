@@ -63,6 +63,7 @@ const TRIGGERS: { value: EmailTemplateTrigger; label: string }[] = [
   { value: 'order_shipped', label: 'Carrier Dispatch' },
   { value: 'order_ready', label: 'Ready for Pickup' },
   { value: 'proof_reminder', label: 'Proof Expiry Reminder' },
+  { value: 'proof_ready', label: 'Proof Ready for Review' },
   { value: 'order_completed', label: 'Fulfillment Finalized' },
   { value: 'order_refunded', label: 'Refund Issued' },
   { value: 'order_cancelled', label: 'Order Cancelled' },

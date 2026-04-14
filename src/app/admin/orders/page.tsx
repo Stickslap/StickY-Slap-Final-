@@ -99,6 +99,7 @@ function OrdersPageContent() {
   const { isStaff, isSyncing } = useAdmin();
   const [searchTerm, setSearchTerm] = useState(urlSearch);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All');
+  const [hideImports, setHideImports] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -257,8 +258,9 @@ function OrdersPageContent() {
     );
     
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
+    const matchesImport = !hideImports || !order.metadata?.isImported;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesImport;
   });
 
   const totalPages = Math.ceil((filteredOrders?.length || 0) / itemsPerPage);
@@ -570,6 +572,13 @@ function OrdersPageContent() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button 
+                variant={hideImports ? "outline" : "default"}
+                className="rounded-xl h-11 px-4 font-bold uppercase text-[10px] tracking-widest border-2"
+                onClick={() => setHideImports(!hideImports)}
+              >
+                {hideImports ? "Show Imports" : "Hide Imports"}
+              </Button>
             </div>
           </div>
         </CardHeader>

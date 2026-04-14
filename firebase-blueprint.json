@@ -61,6 +61,45 @@
         "id": { "type": "string" },
         "role": { "type": "string", "enum": ["Owner", "Admin", "Ops Manager", "Production", "Support", "Content", "Read-only", "Customer", "Vendor"] }
       }
+    },
+    "ClientProof": {
+      "title": "ClientProof",
+      "type": "object",
+      "description": "Artwork proof sent to a client for approval.",
+      "properties": {
+        "id": { "type": "string" },
+        "customerEmail": { "type": "string", "format": "email" },
+        "customerName": { "type": "string" },
+        "projectName": { "type": "string" },
+        "fileUrl": { "type": "string", "format": "uri" },
+        "fileName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "notes": { "type": "string" },
+        "rejectionReason": { "type": "string" },
+        "shareableLink": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerEmail", "projectName", "fileUrl", "status", "createdAt", "updatedAt"]
+    },
+    "EmailTemplate": {
+      "title": "EmailTemplate",
+      "type": "object",
+      "description": "Blueprint for automated email dispatches.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "trigger": { "type": "string" },
+        "subject": { "type": "string" },
+        "previewText": { "type": "string" },
+        "senderName": { "type": "string" },
+        "replyTo": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "header": { "type": "object" },
+        "blocks": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -77,6 +116,14 @@
     "roles/{userId}": {
       "schema": { "$ref": "#/backend/entities/Role" },
       "description": "Unified staff clearance registry."
+    },
+    "client_proofs/{proofId}": {
+      "schema": { "$ref": "#/backend/entities/ClientProof" },
+      "description": "Collection of artwork proofs for client review."
+    },
+    "email_templates/{templateId}": {
+      "schema": { "$ref": "#/backend/entities/EmailTemplate" },
+      "description": "Registry of automated email logic."
     }
   }
 }
