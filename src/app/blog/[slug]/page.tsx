@@ -39,7 +39,7 @@ const DEFAULT_NEWSLETTER: NewsletterSettings = {
 const RenderBlock = ({ block }: { block: BlogBlock }) => {
   switch (block.type) {
     case 'text':
-      return <div className="prose prose-neutral dark:prose-invert max-w-none mb-12 text-lg md:text-xl leading-relaxed whitespace-pre-wrap font-medium text-foreground/80 tracking-tight">{block.content}</div>;
+      return <div className="prose prose-neutral max-w-none mb-12 text-lg md:text-xl leading-relaxed whitespace-pre-wrap font-medium text-foreground/80 tracking-tight">{block.content}</div>;
     case 'image':
       if (!block.url) return null;
       return (

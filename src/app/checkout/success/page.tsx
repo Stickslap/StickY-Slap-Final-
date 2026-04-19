@@ -211,6 +211,40 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
             <Card className="border-2 rounded-[2.5rem] bg-card overflow-hidden shadow-sm">
               <CardHeader className="bg-muted/30 border-b p-6">
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                  <ShieldCheck className="h-3 w-3" /> Secure Agreement
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
+                  Your project is protected by a binding custom print agreement signed at checkout. 
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" size="sm" className="w-full text-[9px] font-black uppercase tracking-widest h-10" onClick={() => setShowContract(true)}>
+                    <Eye className="mr-2 h-3.5 w-3.5" /> View Signed Agreement
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full text-[9px] font-black uppercase tracking-widest h-10" onClick={handleEmailAgreement} disabled={isSendingEmail}>
+                    {isSendingEmail ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />} Email Copy —
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <ContractDialog 
+              open={showContract} 
+              onOpenChange={setShowContract} 
+              data={{
+                fullName: order.contractSignature?.fullName || '',
+                billingAddress: order.contractSignature?.billingAddress || '',
+                shippingAddress: order.contractSignature?.shippingAddress || '',
+                email: order.customerEmail,
+                ipAddress: order.contractSignature?.ipAddress,
+                timestamp: order.contractSignature?.signedAt ? new Date(order.contractSignature.signedAt).toLocaleString() : ''
+              }}
+            />
+
+            <Card className="border-2 rounded-[2.5rem] bg-card overflow-hidden shadow-sm">
+              <CardHeader className="bg-muted/30 border-b p-6">
+                <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
                   <ExternalLink className="h-3 w-3" /> Guest Tracking
                 </CardTitle>
               </CardHeader>

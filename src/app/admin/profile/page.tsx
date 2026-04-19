@@ -37,14 +37,12 @@ import { toast } from '@/hooks/use-toast';
 import { UserProfile } from '@/lib/types';
 import { useAdmin } from '../layout';
 import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
 
 export default function AdminProfilePage() {
   const { user } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const { role } = useAdmin();
-  const { setTheme, theme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
@@ -65,7 +63,6 @@ export default function AdminProfilePage() {
     phone: '',
     language: 'English (US)',
     timezone: 'PST (UTC-8)',
-    theme: 'system',
     density: 'standard',
     mfaEnabled: false,
     notifications: {
@@ -119,7 +116,6 @@ export default function AdminProfilePage() {
         preferences: {
           language: formData.language,
           timezone: formData.timezone,
-          theme: formData.theme,
           density: formData.density,
           notifications: formData.notifications
         },
@@ -416,28 +412,6 @@ export default function AdminProfilePage() {
                 </CardHeader>
                 <CardContent className="p-8 space-y-10">
                   
-                  <div className="space-y-4">
-                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">UI Theme Mode</Label>
-                    <div className="grid grid-cols-3 gap-4">
-                      {['light', 'dark', 'system'].map((t) => (
-                        <div 
-                          key={t}
-                          onClick={() => {
-                            setTheme(t);
-                            setFormData(prev => ({...prev, theme: t}));
-                          }}
-                          className={cn(
-                            "p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center gap-3",
-                            theme === t ? "border-primary bg-primary/5 ring-1 ring-primary shadow-lg" : "border-muted hover:border-primary/30"
-                          )}
-                        >
-                          <div className={cn("h-8 w-12 rounded-md border", t === 'dark' ? "bg-zinc-900" : "bg-zinc-100 shadow-inner")} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">{t}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="space-y-4">
                     <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Layout Density</Label>
                     <div className="flex gap-4">

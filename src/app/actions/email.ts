@@ -157,6 +157,19 @@ function renderBlocksToHtml(blocks: EmailBlock[], data: Record<string, any>, glo
             <img src="${data.proof_url || 'https://picsum.photos/seed/placeholder/400/400'}" style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" />
           </div>`;
 
+      case 'contract_legal':
+        return `
+          <div style="margin-top: 30px; padding: 24px; background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 12px; font-size: 12px; color: #666666; font-family: sans-serif;">
+            <h4 style="margin: 0 0 12px 0; color: #000000; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; font-weight: 900;">Digital Signature Record</h4>
+            <div style="margin-bottom: 16px; border-bottom: 1px dashed #dddddd; padding-bottom: 12px;">
+              <p style="margin: 4px 0;"><strong>Signatory:</strong> ${data.customer_name || 'Member'}</p>
+              <p style="margin: 4px 0;"><strong>IP Address:</strong> ${data.ip_address || '0.0.0.0'}</p>
+              <p style="margin: 4px 0;"><strong>Date Signed:</strong> ${data.signed_at || new Date().toLocaleString()}</p>
+            </div>
+            <p style="margin: 0; font-weight: bold; color: #000000; text-transform: uppercase; font-size: 10px; margin-bottom: 8px;">Agreement Summary:</p>
+            <p style="margin: 0; line-height: 1.5;">Customer acknowledges that all sales are FINAL for custom products. This binding agreement confirms authorization for the uploaded designs and waives the right to unjustified chargebacks under the E-SIGN Act. Production results from this digital authorization.</p>
+          </div>`;
+
       default:
         return '';
     }

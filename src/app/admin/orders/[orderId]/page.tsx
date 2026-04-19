@@ -263,7 +263,10 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
         order_id: liveOrder.id.slice(0, 8),
         order_total: liveOrder.pricing?.total?.toFixed(2) || '0.00',
         order_link: `${window.location.origin}/track?id=${liveOrder.id}`,
-        order_status: liveOrder.status
+        order_status: liveOrder.status,
+        // Contract Specifics
+        ip_address: liveOrder.contractSignature?.ipAddress || '0.0.0.0',
+        signed_at: liveOrder.contractSignature?.signedAt ? new Date(liveOrder.contractSignature.signedAt).toLocaleString() : 'N/A'
       });
 
       if (result.success) {
@@ -981,6 +984,59 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
                   </CardContent>
                 </Card>
               </div>
+
+              {liveOrder.contractSignature && (
+                <Card className="border-2 rounded-[2.5rem] overflow-hidden shadow-sm border-primary/20 bg-primary/5">
+                  <CardHeader className="bg-primary/10 border-b p-8 flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="h-6 w-6 text-primary" />
+                      <div>
+                        <CardTitle className="text-sm font-black uppercase tracking-tight">Binding Custom Print Agreement</CardTitle>
+                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Digital Signature Record (Anti-Chargeback Defense)</CardDescription>
+                      </div>
+                    </div>
+                    <Badge className="bg-primary text-white font-black text-[8px] px-3 h-6 rounded-full">SIGNED & VERIFIED</Badge>
+                  </CardHeader>
+                  <CardContent className="p-8 space-y-8">
+                    <div className="grid md:grid-cols-3 gap-8">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Signatory</p>
+                        <p className="text-sm font-bold">{liveOrder.contractSignature.fullName}</p>
+                        <p className="text-[10px] font-medium text-muted-foreground">{liveOrder.contractSignature.email}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Digital ID (IP)</p>
+                        <p className="text-sm font-bold">{liveOrder.contractSignature.ipAddress}</p>
+                        <p className="text-[10px] font-medium text-muted-foreground line-clamp-1 truncate">{liveOrder.contractSignature.userAgent}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Timestamp</p>
+                        <p className="text-sm font-bold">{new Date(liveOrder.contractSignature.signedAt).toLocaleString()}</p>
+                        <p className="text-[10px] font-medium text-muted-foreground">Agreement v{liveOrder.contractSignature.contractVersion}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 bg-background rounded-2xl border-2 border-dashed border-primary/20">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Agreement Snapshot</h4>
+                        <FileText className="h-4 w-4 text-primary opacity-40" />
+                      </div>
+                      <div className="space-y-4 text-[11px] leading-relaxed text-muted-foreground italic font-medium">
+                        <p className="text-foreground font-black underline">STICKY SLAP LLC – CUSTOM PRINT AGREEMENT & TERMS OF SALE</p>
+                        <p>Customer acknowledges by checking the agreement box at checkout that: (1) All sales are FINAL. (2) Custom products are non-refundable. (3) Production begins immediately and cannot be canceled. (4) Digital signature is binding under the E-SIGN Act.</p>
+                        <p>This data serves as evidence of service fulfillment and authorization in any dispute.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button variant="outline" size="sm" className="rounded-xl h-10 px-6 font-black uppercase text-[10px] border-2 bg-background" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" /> Export Signature Pack
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="border-2 rounded-[2.5rem] overflow-hidden shadow-sm">
                 <CardHeader className="bg-muted/30 border-b p-8">
                   <CardTitle className="text-sm font-black uppercase opacity-70 flex items-center gap-2">

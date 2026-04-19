@@ -51,6 +51,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { getFriendlyErrorMessage, logError } from '@/lib/error-handler';
+import { ContractDialog, CONTRACT_VERSION } from '@/components/checkout/contract-dialog';
 
 const SQUARE_APP_ID = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "sq0idp-zBKDnTXilwoxRhQx6CDOjw";
 const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "L2SFYZ87NJK49";
@@ -95,6 +96,11 @@ export default function CheckoutPage() {
   const [groundingLinks, setGroundingLinks] = useState<any[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Contract State
+  const [showContract, setShowContract] = useState(false);
+  const [ipAddress, setIpAddress] = useState<string>('');
+  const [userAgent, setUserAgent] = useState<string>('');
 
   // Discount State
   const [promoCode, setPromoCode] = useState('');
@@ -181,6 +187,20 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!isMounted) return;
+    
+    // Get IP and UA for contract
+    const fetchMeta = async () => {
+      try {
+        const res = await fetch('/api/utils/get-ip');
+        const data = await res.json();
+        setIpAddress(data.ip);
+        setUserAgent(window.navigator.userAgent);
+      } catch (e) {
+        setIpAddress('0.0.0.0');
+      }
+    };
+    fetchMeta();
+
     const cart = JSON.parse(sessionStorage.getItem('society_cart') || '[]');
     if (cart.length === 0) {
       const single = sessionStorage.getItem('pending_checkout');
@@ -376,6 +396,17 @@ export default function CheckoutPage() {
           method: selectedOption.name,
           phone: identity.phone
         },
+        contractSignature: {
+          fullName: finalName,
+          email: finalEmail,
+          ipAddress: ipAddress,
+          userAgent: userAgent,
+          signedAt: new Date().toISOString(),
+          contractVersion: CONTRACT_VERSION,
+          billingAddress: `${shippingAddress.fullName || finalName}\n${shippingAddress.street}\n${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
+          shippingAddress: `${shippingAddress.fullName || finalName}\n${shippingAddress.street}\n${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
+          agreementText: "STICKY SLAP LLC – CUSTOM PRINT AGREEMENT & TERMS OF SALE"
+        },
         paymentMethod: 'Square (Link)',
         checkoutInfo: { 
           ...customFieldsData, 
@@ -435,10 +466,10 @@ export default function CheckoutPage() {
         </Link>
       </div>
 
-      <main className="container max-w-[1400px] mx-auto min-h-[calc(100vh-96px)]">
-        <div className="flex flex-col lg:flex-row min-h-[calc(100vh-96px)]">
-          <div className="flex-1 lg:border-r border-muted lg:pr-12 py-12 px-4 md:px-8">
-            <div className="max-w-2xl ml-auto space-y-12">
+      <main className="w-full min-h-[calc(100vh-96px)] lg:h-[calc(100vh-96px)] overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-full">
+          <div className="flex-1 lg:border-r border-muted lg:pr-12 py-12 px-4 md:px-16 overflow-y-auto scrollbar-hide">
+            <div className="max-w-2xl ml-auto w-full space-y-12">
               <section className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-black uppercase italic tracking-tighter">Contact</h2>
@@ -563,15 +594,32 @@ export default function CheckoutPage() {
               </section>
 
               <section className="space-y-4 pt-4">
-                <div className="flex items-start space-x-4 p-5 bg-muted/5 border-2 rounded-2xl cursor-pointer" onClick={() => setAgreements({...agreements, terms: !agreements.terms})}>
-                  <Checkbox checked={agreements.terms} onCheckedChange={v => setAgreements({...agreements, terms: !!v})} />
-                  <p className="text-[10px] font-black uppercase leading-tight tracking-tight">I accept Sticky slap llc terms of service and Privacy terms.</p>
+                <div className="flex items-start space-x-4 p-5 bg-muted/5 border-2 rounded-2xl cursor-pointer">
+                  <div className="flex items-center" onClick={() => setAgreements({...agreements, terms: !agreements.terms})}>
+                    <Checkbox id="terms" checked={agreements.terms} onCheckedChange={v => setAgreements({...agreements, terms: !!v})} />
+                  </div>
+                  <Label htmlFor="terms" className="text-[10px] font-black uppercase leading-tight tracking-tight cursor-pointer">
+                    I accept Sticky slap llc <span className="text-primary underline font-bold hover:text-primary/80 transition-colors" onClick={(e) => { e.preventDefault(); setShowContract(true); }}>terms of service and Privacy terms</span>.
+                  </Label>
                 </div>
                 <div className="flex items-start space-x-4 p-5 bg-muted/5 border-2 rounded-2xl cursor-pointer" onClick={() => setAgreements({...agreements, artwork: !agreements.artwork})}>
                   <Checkbox checked={agreements.artwork} onCheckedChange={v => setAgreements({...agreements, artwork: !!v})} />
                   <p className="text-[10px] font-black uppercase leading-tight tracking-tight">sticky slap manufacturing standard with a transparent background.</p>
                 </div>
               </section>
+
+              <ContractDialog 
+                open={showContract} 
+                onOpenChange={setShowContract} 
+                data={{
+                  fullName: user?.displayName || (identity.firstName ? `${identity.firstName} ${identity.lastName}` : ''),
+                  billingAddress: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
+                  shippingAddress: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
+                  email: user?.email || identity.email,
+                  ipAddress: ipAddress,
+                  timestamp: new Date().toLocaleString()
+                }}
+              />
 
               <Button 
                 className="w-full h-20 text-xl font-black uppercase tracking-widest rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all active:scale-[0.98]" 
@@ -583,8 +631,8 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className="lg:w-[500px] w-full bg-muted/10 lg:pl-12 py-12 px-4 md:px-8">
-            <div className="max-w-md mr-auto space-y-10 sticky top-32">
+          <div className="lg:w-[500px] xl:w-[600px] w-full bg-muted/10 lg:pl-12 lg:pr-16 py-12 px-4 md:px-8 overflow-y-auto scrollbar-hide border-l">
+            <div className="max-w-md w-full mr-auto space-y-10">
               <div className="space-y-6">
                 {cartItems.map((item, idx) => (
                   <div key={item.cartId || idx} className="flex gap-6 group relative">

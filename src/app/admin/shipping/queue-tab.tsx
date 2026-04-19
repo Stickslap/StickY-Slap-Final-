@@ -99,7 +99,7 @@ export function ShippingQueueTab() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-blue-50/50 dark:bg-blue-900/10">
+        <Card className="bg-blue-50/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">In Transit</CardTitle>
           </CardHeader>
@@ -110,7 +110,7 @@ export function ShippingQueueTab() {
             <p className="text-xs text-muted-foreground">Projects with active tracking</p>
           </CardContent>
         </Card>
-        <Card className="bg-amber-50/50 dark:bg-amber-900/10">
+        <Card className="bg-amber-50/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Awaiting Dispatch</CardTitle>
           </CardHeader>
@@ -121,7 +121,7 @@ export function ShippingQueueTab() {
             <p className="text-xs text-muted-foreground">Labels pending generation</p>
           </CardContent>
         </Card>
-        <Card className="bg-rose-50/50 dark:bg-rose-900/10">
+        <Card className="bg-rose-50/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Late Risk</CardTitle>
           </CardHeader>

@@ -33,8 +33,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          forcedTheme="light"
           disableTransitionOnChange
         >
           <FirebaseClientProvider>

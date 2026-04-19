@@ -101,10 +101,23 @@ export interface Order {
   estimate?: ShippingEstimate;
   shippedAt?: string;
   deliveredAt?: string;
+  contractSignature?: DigitalSignature;
   metadata?: {
     isImported?: boolean;
     [key: string]: any;
   };
+}
+
+export interface DigitalSignature {
+  fullName: string;
+  email: string;
+  ipAddress: string;
+  userAgent: string;
+  signedAt: string;
+  contractVersion: string;
+  billingAddress: string;
+  shippingAddress: string;
+  agreementText: string;
 }
 
 export interface Proof {
