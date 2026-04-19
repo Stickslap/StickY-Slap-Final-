@@ -618,7 +618,9 @@ export default function CheckoutPage() {
                   email: user?.email || identity.email,
                   ipAddress: ipAddress,
                   userAgent: userAgent,
-                  timestamp: new Date().toLocaleString()
+                  timestamp: new Date().toLocaleString(),
+                  items: cartItems,
+                  total: pricing.total
                 }}
               />
 

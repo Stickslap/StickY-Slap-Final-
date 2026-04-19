@@ -24,6 +24,8 @@ interface ContractDialogProps {
     ipAddress?: string;
     userAgent?: string;
     timestamp?: string;
+    items?: any[];
+    total?: number;
   };
 }
 
@@ -36,30 +38,42 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2rem] border-2 shadow-2xl">
-        <DialogHeader className="p-8 border-b bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                <ShieldCheck className="h-6 w-6 text-primary" />
+      <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col overflow-hidden rounded-none border-none shadow-none bg-background">
+        <DialogHeader className="p-8 border-b bg-muted/10 shrink-0">
+          <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border-2 border-primary/20">
+                <ShieldCheck className="h-7 w-7 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Legal Agreement</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Version {CONTRACT_VERSION} • Binding Dispatch</DialogDescription>
+                <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Legal Agreement & Terms of Sale</DialogTitle>
+                <DialogDescription className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Version {CONTRACT_VERSION} • Binding Digital Contract</DialogDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={handlePrint} className="rounded-full">
-              <Printer className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="icon" onClick={handlePrint} className="rounded-xl h-12 w-12">
+                <Printer className="h-5 w-5" />
+              </Button>
+              <Button onClick={() => onOpenChange(false)} variant="ghost" className="rounded-xl h-12 px-6 font-black uppercase tracking-widest text-xs border-2">
+                Exit View —
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-8">
-          <div className="prose prose-sm max-w-none text-muted-foreground space-y-8 font-medium leading-relaxed" id="contract-content">
-            <section className="text-center space-y-2 mb-12">
-              <h2 className="text-3xl font-black uppercase italic tracking-tighter text-foreground leading-none">STICKY SLAP LLC – CUSTOM PRINT AGREEMENT & TERMS OF SALE</h2>
-              <p className="text-xs font-black uppercase tracking-widest opacity-60">Effective Date: {new Date().toLocaleDateString()}</p>
-            </section>
+        <ScrollArea className="flex-1 bg-background">
+          <div className="max-w-4xl mx-auto w-full p-12 md:p-20">
+            <div className="prose prose-sm max-w-none text-muted-foreground space-y-12 font-medium leading-[1.8]" id="contract-content">
+              <section className="text-center space-y-4 mb-20">
+                <h1 className="text-5xl md:text-6xl font-black uppercase italic tracking-tighter text-foreground leading-[0.9]">
+                  STICKY SLAP LLC<br />
+                  <span className="text-primary italic">—</span> CUSTOM PRINT AGREEMENT <span className="text-primary italic">&</span> TERMS OF SALE
+                </h1>
+                <div className="pt-4 flex flex-col items-center gap-1">
+                  <p className="text-xs font-black uppercase tracking-[0.4em] opacity-40">Effective Date: {timestamp}</p>
+                  <div className="h-1 w-20 bg-primary/20 rounded-full" />
+                </div>
+              </section>
 
             <p className="border-l-4 border-primary pl-4 italic">
               This Agreement (“Agreement”) is entered into between <strong>Sticky Slap LLC</strong> (“Business”) and the customer completing a purchase (“Customer”).
@@ -93,7 +107,26 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
                   <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Device / Browser</span> <span className="text-foreground text-right truncate max-w-[200px]">{data.userAgent || '[RECORDED]'}</span></div>
                   <div className="flex justify-between py-1"><span className="font-bold uppercase tracking-widest opacity-60">Date & Time of Acceptance</span> <span className="text-foreground">{timestamp}</span></div>
                 </div>
-                <p className="text-[10px] uppercase font-bold text-destructive">Customer acknowledges this data may be used to contest chargebacks and payment disputes.</p>
+
+                {data.items && data.items.length > 0 && (
+                  <div className="mt-8 space-y-4 pt-6 border-t-2 border-muted">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-60">Transaction Subset (Order Details)</h4>
+                    <div className="space-y-3">
+                      {data.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase">
+                          <span className="truncate max-w-[200px]">{item.productName} ({item.quantity}x)</span>
+                          <span className="shrink-0">${((item.pricePerUnit || 0) * (item.quantity || 0)).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div className="pt-3 border-t flex justify-between items-center text-xs font-black">
+                        <span>Total (USD)</span>
+                        <span className="text-primary text-sm">${(data.total || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-[10px] uppercase font-bold text-destructive mt-6">Customer acknowledges this data may be used to contest chargebacks and payment disputes.</p>
               </div>
 
               <hr className="border-muted" />
@@ -245,12 +278,6 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
             </div>
           </div>
         </ScrollArea>
-
-        <DialogFooter className="p-6 border-t bg-muted/30">
-          <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto rounded-xl font-bold uppercase tracking-widest text-xs h-12 px-8">
-            Close Agreement —
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
