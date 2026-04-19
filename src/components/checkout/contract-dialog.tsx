@@ -22,6 +22,7 @@ interface ContractDialogProps {
     shippingAddress: string;
     email: string;
     ipAddress?: string;
+    userAgent?: string;
     timestamp?: string;
   };
 }
@@ -61,64 +62,75 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
             </section>
 
             <p className="border-l-4 border-primary pl-4 italic">
-              This Agreement (“Agreement”) is entered into between Sticky Slap LLC (“Business”) and the customer completing a purchase (“Customer”).
+              This Agreement (“Agreement”) is entered into between <strong>Sticky Slap LLC</strong> (“Business”) and the customer completing a purchase (“Customer”).
             </p>
+
+            <hr className="border-muted" />
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">1. Binding Acceptance & Electronic Signature</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">1. Binding Acceptance & Electronic Signature</h3>
                 <p>By selecting “I Agree” at checkout, the Customer:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Enters into a legally binding contract</li>
-                  <li>Provides a valid electronic signature</li>
+                  <li>Provides a valid <strong>electronic signature</strong></li>
                   <li>Confirms full acceptance of all terms herein</li>
                 </ul>
                 <p className="text-[10px] uppercase font-bold text-primary">This agreement is enforceable under the U.S. Electronic Signatures in Global and National Commerce Act (E-SIGN Act).</p>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-4 p-6 bg-muted/10 border-2 border-dashed rounded-2xl">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">2. Customer Identity Verification (Chargeback Defense Record)</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">2. Customer Identity Verification (Chargeback Defense Record)</h3>
                 <p>The following information is automatically collected and attached to this Agreement as proof of authorization:</p>
                 <div className="grid gap-2 text-xs">
                   <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Full Name</span> <span className="text-foreground">{data.fullName || '[PENDING]'}</span></div>
                   <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Billing Address</span> <span className="text-foreground text-right">{data.billingAddress || '[PENDING]'}</span></div>
                   <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Shipping Address</span> <span className="text-foreground text-right">{data.shippingAddress || '[PENDING]'}</span></div>
                   <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Email Address</span> <span className="text-foreground">{data.email || '[PENDING]'}</span></div>
-                  <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">IP Address</span> <span className="text-foreground">{data.ipAddress || '[RECORDED AT SUBMISSION]'}</span></div>
-                  <div className="flex justify-between py-1"><span className="font-bold uppercase tracking-widest opacity-60">Timestamp</span> <span className="text-foreground">{timestamp}</span></div>
+                  <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">IP Address</span> <span className="text-foreground">{data.ipAddress || '[RECORDED]'}</span></div>
+                  <div className="flex justify-between border-b py-1"><span className="font-bold uppercase tracking-widest opacity-60">Device / Browser</span> <span className="text-foreground text-right truncate max-w-[200px]">{data.userAgent || '[RECORDED]'}</span></div>
+                  <div className="flex justify-between py-1"><span className="font-bold uppercase tracking-widest opacity-60">Date & Time of Acceptance</span> <span className="text-foreground">{timestamp}</span></div>
                 </div>
                 <p className="text-[10px] uppercase font-bold text-destructive">Customer acknowledges this data may be used to contest chargebacks and payment disputes.</p>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">3. Custom Product Acknowledgment (NO CANCELLATION / NO REFUND)</h3>
-                <p>All products sold by Sticky Slap LLC are custom-made based on Customer-uploaded designs.</p>
-                <p className="font-black uppercase italic text-foreground tracking-tight underline">By placing an order, the Customer agrees:</p>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">3. Custom Product Acknowledgment (NO CANCELLATION / NO REFUND)</h3>
+                <p>All products sold by Sticky Slap LLC are <strong>custom-made based on Customer-uploaded designs</strong>.</p>
+                <p className="font-black uppercase italic text-foreground tracking-tight">By placing an order, the Customer agrees:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>All sales are FINAL</li>
-                  <li>Orders CANNOT be canceled, refunded, or reversed once production begins</li>
+                  <li>All sales are <strong>FINAL</strong></li>
+                  <li>Orders <strong>CANNOT be canceled, refunded, or reversed</strong> once production begins</li>
                   <li>Chargebacks claiming “product not as described” are invalid if the printed design matches the uploaded file</li>
                 </ul>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">4. File Upload Responsibility & Print Accuracy</h3>
+              <hr className="border-muted" />
+
+              <div className="space-y-3">
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">4. File Upload Responsibility & Print Accuracy</h3>
                 <p>The Customer is solely responsible for:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>File quality, resolution, spelling, and design content</li>
                   <li>Ensuring artwork is print-ready</li>
                 </ul>
-                <p>Sticky Slap LLC is NOT responsible for:</p>
+                <p>Sticky Slap LLC is <strong>NOT responsible</strong> for:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Low-resolution uploads</li>
                   <li>Color variations between screen and print</li>
                   <li>Minor alignment or trimming variances (industry standard tolerance)</li>
                 </ul>
-                <p className="font-bold italic">Approval of upload = final approval for print</p>
+                <p className="font-bold italic">Approval of upload = <strong>final approval for print</strong></p>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">5. Proof of Fulfillment (Anti-Chargeback Clause)</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">5. Proof of Fulfillment (Anti-Chargeback Clause)</h3>
                 <p>Sticky Slap LLC maintains records including:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Uploaded artwork files</li>
@@ -126,11 +138,13 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
                   <li>Production records</li>
                   <li>Shipping confirmation and tracking</li>
                 </ul>
-                <p>These records serve as evidence of service fulfillment in any dispute.</p>
+                <p>These records serve as <strong>evidence of service fulfillment</strong> in any dispute.</p>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">6. Shipping & Delivery</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">6. Shipping & Delivery</h3>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Orders are considered fulfilled once shipped</li>
                   <li>Tracking information will be provided when available</li>
@@ -139,13 +153,15 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
                 <p>Claims of “item not received” must be addressed with the shipping carrier.</p>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">7. Fraud & Chargeback Abuse Policy</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">7. Fraud & Chargeback Abuse Policy</h3>
                 <p>The Customer agrees:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Filing a fraudulent chargeback after receiving goods constitutes theft of services</li>
+                  <li>Filing a fraudulent chargeback after receiving goods constitutes <strong>theft of services</strong></li>
                   <li>Sticky Slap LLC reserves the right to:
-                    <ul className="list-circle pl-5 mt-1">
+                    <ul className="list-circle pl-5 mt-1 space-y-1">
                       <li>Submit all collected evidence to the payment processor</li>
                       <li>Pursue recovery of funds</li>
                       <li>Report fraudulent activity to collections or legal authorities</li>
@@ -154,8 +170,10 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
                 </ul>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">8. Payment Authorization</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">8. Payment Authorization</h3>
                 <p>By completing checkout, the Customer:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Confirms they are the authorized cardholder</li>
@@ -164,27 +182,52 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
                 </ul>
               </div>
 
+              <hr className="border-muted" />
+
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">9. Limitation of Liability</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">9. Limitation of Liability</h3>
+                <p>Sticky Slap LLC shall not be liable for:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Indirect or incidental damages</li>
+                  <li>Losses related to Customer-provided content</li>
+                </ul>
                 <p>Maximum liability shall not exceed the total amount paid for the order.</p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">10. Intellectual Property Responsibility</h3>
-                <p>The Customer affirms they own or have rights to use all uploaded content. Sticky Slap LLC is not liable for copyright violations.</p>
-              </div>
+              <hr className="border-muted" />
 
               <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">11. Governing Law</h3>
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">10. Intellectual Property Responsibility</h3>
+                <p>The Customer affirms:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>They own or have rights to use all uploaded content</li>
+                  <li>Sticky Slap LLC is not liable for copyright violations</li>
+                </ul>
+                <p>Customer assumes full legal responsibility for submitted designs.</p>
+              </div>
+
+              <hr className="border-muted" />
+
+              <div className="space-y-2">
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">11. Governing Law</h3>
                 <p>This Agreement shall be governed by the laws of the State of Oklahoma.</p>
               </div>
+
+              <hr className="border-muted" />
+
+              <div className="space-y-2">
+                <h3 className="text-base font-black uppercase tracking-widest text-foreground">12. Entire Agreement</h3>
+                <p>This Agreement constitutes the full understanding between Sticky Slap LLC and the Customer and overrides any prior communications.</p>
+              </div>
+
+              <hr className="border-muted" />
 
               <div className="space-y-8 pt-12 border-t-2 border-dashed">
                 <div className="space-y-4">
                   <h3 className="text-lg font-black uppercase italic tracking-tighter text-foreground">13. Digital Signature Record</h3>
                   <div className="grid gap-2 text-[10px] font-black uppercase tracking-widest">
                     <p>Customer Name: <span className="text-primary">{data.fullName || '____________________'}</span></p>
-                    <p>IP Address: <span className="text-primary">{data.ipAddress || '[RECORDED AT CHECKOUT]'}</span></p>
+                    <p>IP Address: <span className="text-primary">{data.ipAddress || '[RECORDED]'}</span></p>
                     <p>Date Signed: <span className="text-primary">{timestamp}</span></p>
                     <p>Agreement Method: Checkbox Consent at Checkout</p>
                   </div>

@@ -617,6 +617,7 @@ export default function CheckoutPage() {
                   shippingAddress: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`,
                   email: user?.email || identity.email,
                   ipAddress: ipAddress,
+                  userAgent: userAgent,
                   timestamp: new Date().toLocaleString()
                 }}
               />
