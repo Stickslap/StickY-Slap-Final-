@@ -29,7 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Plus, Link as LinkIcon, Trash2, Eye, Mail, CheckCircle2, XCircle, Clock, Upload, X, Loader2, History, MessageCircle, RotateCcw, Download } from 'lucide-react';
+import { FileText, Plus, Link as LinkIcon, Trash2, Eye, Mail, CheckCircle2, XCircle, Clock, Upload, X, Loader2, History, MessageCircle, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -177,22 +177,6 @@ export default function AdminProofsPage() {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
-  };
-
-  const getCloudinaryDownloadUrl = (url: string) => {
-    if (!url.includes('cloudinary.com')) return url;
-    if (url.includes('/upload/')) {
-      return url.replace('/upload/', '/upload/fl_attachment/');
-    }
-    return url;
-  };
-
-  const getCloudinaryPreviewUrl = (url: string) => {
-    if (!url.includes('cloudinary.com')) return url;
-    if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().endsWith('.ai')) {
-      return url.replace(/\.(pdf|ai)$/i, '.jpg');
-    }
-    return url;
   };
 
   const copyLink = (link: string) => {
@@ -352,15 +336,8 @@ export default function AdminProofsPage() {
                       }}>
                         <MessageCircle className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="View Public Page" asChild>
-                        <Link href={`/proof/${proof.id}`} target="_blank">
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="Download File" asChild>
-                        <a href={getCloudinaryDownloadUrl(proof.fileUrl)} target="_blank" rel="noopener noreferrer" download>
-                          <Download className="w-4 h-4" />
-                        </a>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="View Public Page" onClick={() => window.open(`/proof/${proof.id}`, '_blank')}>
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="Copy Link" onClick={() => copyLink(proof.shareableLink || `${window.location.origin}/proof/${proof.id}`)}>
                         <LinkIcon className="w-4 h-4" />
@@ -510,18 +487,9 @@ export default function AdminProofsPage() {
                         {rev.rejectionReason && <p className="text-[8px] font-bold text-rose-500 italic truncate">Reason: {rev.rejectionReason}</p>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" asChild>
-                        <a href={getCloudinaryPreviewUrl(rev.fileUrl)} target="_blank" rel="noopener noreferrer">
-                          <Eye className="w-3.5 h-3.5" />
-                        </a>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" asChild>
-                        <a href={getCloudinaryDownloadUrl(rev.fileUrl)} target="_blank" rel="noopener noreferrer" download>
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => window.open(rev.fileUrl, '_blank')}>
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               </div>
