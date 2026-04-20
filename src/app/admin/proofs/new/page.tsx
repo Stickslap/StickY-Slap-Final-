@@ -33,8 +33,6 @@ export default function NewProofPage() {
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [notes, setNotes] = useState('');
-  const [internalNotes, setInternalNotes] = useState('');
-  const [orderId, setOrderId] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,9 +130,6 @@ export default function NewProofPage() {
         fileName: finalFileName,
         status: 'pending',
         notes,
-        internalNotes,
-        orderId,
-        history: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -280,36 +275,14 @@ export default function NewProofPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Order Reference (Optional)</Label>
-                  <Input 
-                    value={orderId} 
-                    onChange={e => setOrderId(e.target.value)} 
-                    placeholder="e.g. Order #12345"
-                    className="h-12 rounded-xl border-2"
+                  <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Notes to Client</Label>
+                  <Textarea 
+                    value={notes} 
+                    onChange={e => setNotes(e.target.value)} 
+                    placeholder="Please review the placement and colors..."
+                    rows={5}
+                    className="rounded-xl border-2 resize-none"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Notes to Client</Label>
-                    <Textarea 
-                      value={notes} 
-                      onChange={e => setNotes(e.target.value)} 
-                      placeholder="Please review the placement and colors..."
-                      rows={4}
-                      className="rounded-xl border-2 resize-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 text-primary">Internal Registry Notes</Label>
-                    <Textarea 
-                      value={internalNotes} 
-                      onChange={e => setInternalNotes(e.target.value)} 
-                      placeholder="Production instructions or internal tracking..."
-                      rows={4}
-                      className="rounded-xl border-2 resize-none bg-primary/5"
-                    />
-                  </div>
                 </div>
               </div>
 

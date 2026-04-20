@@ -128,7 +128,6 @@ export interface Proof {
   version: number;
   status: 'pendingApproval' | 'approved' | 'rejected';
   feedback?: string;
-  notes?: string;
 }
 
 export interface TrackingInfo {
