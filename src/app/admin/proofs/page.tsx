@@ -3,9 +3,9 @@
 import React, { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { ClientProof, UserProfile } from '@/lib/types';
+import { ClientProof, UserProfile, ProofRevision, OrderStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,19 +24,38 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Plus, Link as LinkIcon, Trash2, Eye, Mail, CheckCircle2, XCircle, Clock, Upload, X, Loader2 } from 'lucide-react';
+import { FileText, Plus, Link as LinkIcon, Trash2, Eye, Mail, CheckCircle2, XCircle, Clock, Upload, X, Loader2, History, MessageCircle, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { dispatchSocietyEmail } from '@/app/actions/email';
 
 export default function AdminProofsPage() {
   const db = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [proofToDelete, setProofToDelete] = useState<string | null>(null);
+  
+  // Revision State
+  const [proofToRevise, setProofToRevise] = useState<ClientProof | null>(null);
+  const [revisionFile, setRevisionFile] = useState<File | null>(null);
+  const [revisionNotes, setRevisionNotes] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const revisionFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Internal Notes State
+  const [proofForNotes, setProofForNotes] = useState<ClientProof | null>(null);
+  const [tempInternalNotes, setTempInternalNotes] = useState('');
+
+  // History State
+  const [viewingHistory, setViewingHistory] = useState<ClientProof | null>(null);
+
+  const CLOUDINARY_CLOUD_NAME = "dabgothkm";
+  const CLOUDINARY_UPLOAD_PRESET = "unsigned_upload";
   
   const proofsQuery = useMemoFirebase(() => query(collection(db, 'client_proofs'), orderBy('createdAt', 'desc')), [db]);
   const { data: proofs, isLoading } = useCollection<ClientProof>(proofsQuery);
@@ -58,6 +77,103 @@ export default function AdminProofsPage() {
       await deleteDoc(doc(db, 'client_proofs', proofToDelete));
       toast({ title: 'Deleted', description: 'Proof deleted successfully.' });
       setProofToDelete(null);
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleUpdateStatus = async (proofId: string, newStatus: string, orderId?: string) => {
+    try {
+      await updateDoc(doc(db, 'client_proofs', proofId), {
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: 'Status Updated' });
+
+      // If approved and linked to an order, offer to update order status
+      if (newStatus === 'approved' && orderId) {
+        toast({
+          title: "Order sync detected",
+          description: "Proof approved. Would you like to mark the order as Approved?",
+          action: (
+            <Button size="sm" onClick={() => updateOrderStatus(orderId, 'Approved')}>Update Order</Button>
+          ),
+        });
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, { status, updatedAt: new Date().toISOString() });
+      toast({ title: 'Order Updated', description: `Order ${orderId} is now ${status}.` });
+    } catch (e: any) {
+      toast({ title: 'Sync Failed', description: "Ensure the order reference is a valid Registry ID.", variant: 'destructive' });
+    }
+  };
+
+  const handleSendRevision = async () => {
+    if (!proofToRevise || !revisionFile) return;
+    setIsSubmitting(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', revisionFile);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'proofs');
+
+      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!uploadResponse.ok) throw new Error('Upload failed');
+      const uploadData = await uploadResponse.json();
+      const newUrl = uploadData.secure_url;
+
+      const revision: ProofRevision = {
+        fileUrl: proofToRevise.fileUrl,
+        fileName: proofToRevise.fileName,
+        notes: proofToRevise.notes,
+        rejectionReason: proofToRevise.rejectionReason,
+        status: proofToRevise.status,
+        createdAt: proofToRevise.updatedAt || proofToRevise.createdAt
+      };
+
+      await updateDoc(doc(db, 'client_proofs', proofToRevise.id), {
+        fileUrl: newUrl,
+        fileName: revisionFile.name,
+        status: 'pending',
+        notes: revisionNotes || proofToRevise.notes,
+        rejectionReason: null, 
+        history: arrayUnion(revision),
+        updatedAt: new Date().toISOString()
+      });
+
+      toast({ title: 'Revision Sent', description: 'The client has been notified of the update.' });
+      setProofToRevise(null);
+      setRevisionFile(null);
+      setRevisionNotes('');
+    } catch (error: any) {
+      toast({ title: 'Revision Failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveInternalNotes = async () => {
+    if (!proofForNotes) return;
+    try {
+      await updateDoc(doc(db, 'client_proofs', proofForNotes.id), {
+        internalNotes: tempInternalNotes,
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: 'Internal Notes Saved' });
+      setProofForNotes(null);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -178,18 +294,48 @@ export default function AdminProofsPage() {
                     <div className="text-[10px] text-muted-foreground font-medium">{proof.customerEmail}</div>
                   </TableCell>
                   <TableCell>
-                    {getStatusBadge(proof.status)}
-                    {proof.status === 'rejected' && proof.rejectionReason && (
-                      <div className="text-[9px] text-rose-500 mt-1 max-w-[200px] truncate font-bold uppercase" title={proof.rejectionReason}>
-                        Note: {proof.rejectionReason}
-                      </div>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {getStatusBadge(proof.status)}
+                      {proof.status === 'rejected' && proof.rejectionReason && (
+                        <div className="text-[9px] text-rose-500 max-w-[200px] truncate font-bold uppercase italic" title={proof.rejectionReason}>
+                          Client Feedback: {proof.rejectionReason}
+                        </div>
+                      )}
+                      {proof.internalNotes && (
+                        <div className="text-[9px] text-blue-500 max-w-[200px] truncate font-bold uppercase" title={proof.internalNotes}>
+                          Staff Note: {proof.internalNotes}
+                        </div>
+                      )}
+                      {proof.history && proof.history.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          className="h-5 p-0 text-[8px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary w-fit"
+                          onClick={() => setViewingHistory(proof)}
+                        >
+                          <History className="w-2.5 h-2.5 mr-1" /> View Timeline ({proof.history.length})
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-[10px] font-bold text-muted-foreground uppercase">
                     {new Date(proof.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right px-8">
                     <div className="flex justify-end gap-2">
+                      {proof.status === 'rejected' && (
+                        <Button variant="outline" size="sm" className="h-9 rounded-xl border-dashed border-rose-500/50 text-rose-600 hover:bg-rose-50 text-[9px] font-black uppercase tracking-widest" onClick={() => {
+                          setProofToRevise(proof);
+                          setRevisionNotes(`Revision based on feedback: ${proof.rejectionReason}`);
+                        }}>
+                          <RotateCcw className="w-3 h-3 mr-1" /> Send Revision
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="Internal Notes" onClick={() => {
+                        setProofForNotes(proof);
+                        setTempInternalNotes(proof.internalNotes || '');
+                      }}>
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="View Public Page" onClick={() => window.open(`/proof/${proof.id}`, '_blank')}>
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -223,6 +369,137 @@ export default function AdminProofsPage() {
             <Button variant="ghost" className="rounded-xl" onClick={() => setProofToDelete(null)}>Cancel</Button>
             <Button variant="destructive" className="rounded-xl px-8 font-bold uppercase tracking-widest" onClick={handleDelete}>Delete Proof —</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revision Dialog */}
+      <Dialog open={!!proofToRevise} onOpenChange={(open) => !open && setProofToRevise(null)}>
+        <DialogContent className="rounded-[2.5rem] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">Deploy Revision</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 space-y-6">
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-rose-600 mb-1 leading-none">Rejected Feedback</p>
+              <p className="text-sm font-medium italic opacity-80">"{proofToRevise?.rejectionReason}"</p>
+            </div>
+            
+            <input type="file" ref={revisionFileInputRef} className="hidden" onChange={e => setRevisionFile(e.target.files?.[0] || null)} accept="image/*,.pdf" />
+            <div onClick={() => revisionFileInputRef.current?.click()} className={cn("border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all", revisionFile ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50")}>
+              {isSubmitting ? (
+                <div className="w-full space-y-4 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Uploading Revision...</p>
+                </div>
+              ) : (
+                <>
+                  {revisionFile ? <CheckCircle2 className="h-8 w-8 text-primary" /> : <Upload className="h-8 w-8 text-muted-foreground mb-2" />}
+                  <p className="text-sm font-bold uppercase tracking-tighter">{revisionFile ? revisionFile.name : "Select Updated Design"}</p>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Notes to Client (Revision Context)</Label>
+              <Textarea 
+                value={revisionNotes} 
+                onChange={e => setRevisionNotes(e.target.value)} 
+                placeholder="Briefly explain the changes made..."
+                className="rounded-xl border-2 italic text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-widest" onClick={handleSendRevision} disabled={!revisionFile || isSubmitting}>
+              {isSubmitting ? "Processing..." : "Publish Revision —"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Internal Notes Dialog */}
+      <Dialog open={!!proofForNotes} onOpenChange={(open) => !open && setProofForNotes(null)}>
+        <DialogContent className="rounded-[2.5rem]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">Internal Registry Note</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <p className="text-xs font-medium text-muted-foreground">These notes are for staff eyes only and will not be visible to the client.</p>
+            <Textarea 
+              value={tempInternalNotes} 
+              onChange={e => setTempInternalNotes(e.target.value)}
+              placeholder="Enter internal production notes or reminders..."
+              className="min-h-[150px] rounded-2xl border-2 p-5"
+            />
+          </div>
+          <DialogFooter>
+            <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-primary" onClick={handleSaveInternalNotes}>
+              Save Internal Entry —
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History/Timeline Dialog */}
+      <Dialog open={!!viewingHistory} onOpenChange={(open) => !open && setViewingHistory(null)}>
+        <DialogContent className="rounded-[2.5rem] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">Revision History</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 overflow-y-auto max-h-[60vh] space-y-6 pr-4">
+            {/* Current/Latest */}
+            <div className="relative pl-8 border-l-2 border-primary pb-6">
+              <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-primary border-4 border-background shadow-sm" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">Current Version (Live)</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">{new Date(viewingHistory?.updatedAt || viewingHistory?.createdAt || '').toLocaleString()}</span>
+                </div>
+                <div className="p-4 bg-muted/30 border-2 rounded-2xl flex gap-4 items-center">
+                  <div className="h-12 w-12 rounded-xl bg-background border flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-bold truncate">{viewingHistory?.fileName}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground italic truncate">Notes: {viewingHistory?.notes || 'No notes'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* History Items */}
+            {viewingHistory?.history?.slice().reverse().map((rev, idx) => (
+              <div key={idx} className="relative pl-8 border-l-2 border-muted pb-6">
+                <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-muted border-4 border-background" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Version Audit</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">{new Date(rev.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="p-4 bg-card border-2 rounded-2xl flex gap-4 items-center opacity-60">
+                    <div className="h-10 w-10 rounded-xl bg-background border flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-xs font-bold truncate">{rev.fileName}</p>
+                      <div className="flex gap-2 items-center mt-1">
+                        <Badge className="text-[7px] font-black uppercase h-4 px-1.5">{rev.status}</Badge>
+                        {rev.rejectionReason && <p className="text-[8px] font-bold text-rose-500 italic truncate">Reason: {rev.rejectionReason}</p>}
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => window.open(rev.fileUrl, '_blank')}>
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]" onClick={() => setViewingHistory(null)}>
+              Dismiss Timeline
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
