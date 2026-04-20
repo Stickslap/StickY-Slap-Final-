@@ -491,13 +491,28 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
   const isImage = (url?: string) => {
     if (!url) return false;
     const path = url.split('?')[0].toLowerCase();
-    return (
-      path.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp|avif)$/i) || 
-      url.startsWith('data:image') ||
-      url.includes('cloudinary.com') ||
-      url.includes('picsum.photos') ||
-      url.includes('images.unsplash.com')
-    );
+    // Only treat it as an image if it has a standard image extension or is a known image provider
+    // If it's the specific .ai URL provided by Cloudinary, we handle it as a special case in the UI
+    const isStandardImage = !!path.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp|avif)$/i);
+    return isStandardImage || url.startsWith('data:image');
+  };
+
+  const getCloudinaryPreviewUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    // For PDFs and .AI files, Cloudinary can generate a JPG preview by changing extension
+    if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().endsWith('.ai')) {
+      return url.replace(/\.(pdf|ai)$/i, '.jpg');
+    }
+    return url;
+  };
+
+  const getCloudinaryDownloadUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    // Inject fl_attachment to force browser download
+    if (url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
   };
 
   if (isLiveLoading) return (
@@ -617,8 +632,15 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
                   {liveOrder.proofs?.map((proof) => (
                     <div key={proof.id} className="flex flex-col md:flex-row gap-8 p-6 bg-muted/5 border-2 rounded-[2rem] group hover:border-primary/30 transition-all">
                       <div className="h-32 w-32 relative rounded-2xl bg-muted/10 border-2 flex items-center justify-center overflow-hidden">
-                        {isImage(proof.fileUrl) ? (
-                          <Image src={proof.fileUrl} alt={proof.fileName} fill className="object-contain p-2" unoptimized />
+                        {isImage(proof.fileUrl) || (proof.fileUrl.includes('cloudinary.com') && (proof.fileUrl.toLowerCase().endsWith('.ai') || proof.fileUrl.toLowerCase().endsWith('.pdf'))) ? (
+                          <Image 
+                            src={getCloudinaryPreviewUrl(proof.fileUrl)} 
+                            alt={proof.fileName} 
+                            fill 
+                            className="object-contain p-2" 
+                            unoptimized 
+                            referrerPolicy="no-referrer"
+                          />
                         ) : (
                           <div className="flex flex-col items-center gap-2 opacity-40">
                             <FileText className="h-8 w-8 text-primary" />
@@ -631,7 +653,18 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
                           <div><h4 className="text-xl font-black uppercase italic tracking-tight">{proof.fileName}</h4><p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">v{proof.version} • {new Date(proof.uploadedAt).toLocaleDateString()}</p></div>
                           <Badge className={cn("uppercase font-black text-[8px] px-3 h-6 rounded-full shadow-sm", proof.status === 'approved' ? "bg-emerald-500" : proof.status === 'rejected' ? "bg-rose-500 text-white" : "bg-amber-500")}>{proof.status === 'pendingApproval' ? 'Awaiting Member' : proof.status}</Badge>
                         </div>
-                        <div className="flex gap-3"><Button variant="outline" size="sm" className="h-9 rounded-xl font-black uppercase text-[9px] border-2" asChild><a href={proof.fileUrl} target="_blank"><Eye className="mr-2 h-3.5 w-3.5" /> View File</a></Button></div>
+                        <div className="flex gap-3">
+                          <Button variant="outline" size="sm" className="h-9 rounded-xl font-black uppercase text-[9px] border-2" asChild>
+                            <a href={proof.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <Eye className="mr-2 h-3.5 w-3.5" /> View
+                            </a>
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-9 rounded-xl font-black uppercase text-[9px] border-2" asChild>
+                            <a href={getCloudinaryDownloadUrl(proof.fileUrl)} target="_blank" rel="noopener noreferrer" download>
+                              <Download className="mr-2 h-3.5 w-3.5" /> Download
+                            </a>
+                          </Button>
+                        </div>
                         {proof.status === 'approved' && liveOrder.proofApproval && <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /><p className="text-xs font-medium text-emerald-800 italic">"{liveOrder.proofApproval.comment}"</p></div>}
                         {proof.status === 'rejected' && proof.feedback && <div className="p-4 bg-rose-50 rounded-xl border border-rose-100"><p className="text-[8px] font-black uppercase text-rose-600">Revision Request</p><p className="text-xs font-medium text-rose-800 italic">"{proof.feedback}"</p></div>}
                       </div>
@@ -650,8 +683,15 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
                         </div>
                         <div className="h-24 w-24 relative rounded-xl border-2 bg-background overflow-hidden shadow-sm flex items-center justify-center">
                           {item.artworkUrl ? (
-                            isImage(item.artworkUrl) ? (
-                              <Image src={item.artworkUrl} alt="Design" fill className="object-contain p-2" unoptimized />
+                            isImage(item.artworkUrl) || item.artworkUrl.includes('cloudinary.com') ? (
+                              <Image 
+                                src={getCloudinaryPreviewUrl(item.artworkUrl)} 
+                                alt="Design" 
+                                fill 
+                                className="object-contain p-2" 
+                                unoptimized 
+                                referrerPolicy="no-referrer"
+                              />
                             ) : (
                               <div className="flex flex-col items-center gap-1 opacity-40">
                                 <FileText className="h-8 w-8 text-primary" />
@@ -689,9 +729,14 @@ function OrderDetailsContent({ orderId, tab: initialTab }: { orderId: string, ta
                           {item.artworkUrl && (
                             <div className="space-y-2">
                               <Label className="text-[10px] uppercase font-black opacity-60 flex items-center gap-2"><FileText className="h-3 w-3" /> Production Artwork</Label>
-                              <Button variant="outline" size="sm" className="w-full h-10 rounded-xl text-[10px] font-black uppercase border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50" asChild>
-                                <a href={item.artworkUrl} target="_blank"><Download className="mr-2 h-4 w-4" /> Download Artwork —</a>
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="flex-1 h-10 rounded-xl text-[10px] font-black uppercase border-2 text-primary" asChild>
+                                  <a href={item.artworkUrl} target="_blank" rel="noopener noreferrer"><Eye className="mr-2 h-4 w-4" /> View —</a>
+                                </Button>
+                                <Button variant="outline" size="sm" className="flex-1 h-10 rounded-xl text-[10px] font-black uppercase border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50" asChild>
+                                  <a href={getCloudinaryDownloadUrl(item.artworkUrl)} target="_blank" rel="noopener noreferrer" download><Download className="mr-2 h-4 w-4" /> Download —</a>
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>

@@ -179,6 +179,22 @@ export default function AdminProofsPage() {
     }
   };
 
+  const getCloudinaryDownloadUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    if (url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  };
+
+  const getCloudinaryPreviewUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().endsWith('.ai')) {
+      return url.replace(/\.(pdf|ai)$/i, '.jpg');
+    }
+    return url;
+  };
+
   const copyLink = (link: string) => {
     navigator.clipboard.writeText(link);
     toast({ title: 'Copied', description: 'Link copied to clipboard.' });
@@ -336,8 +352,15 @@ export default function AdminProofsPage() {
                       }}>
                         <MessageCircle className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="View Public Page" onClick={() => window.open(`/proof/${proof.id}`, '_blank')}>
-                        <Eye className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="View Public Page" asChild>
+                        <Link href={`/proof/${proof.id}`} target="_blank">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="Download File" asChild>
+                        <a href={getCloudinaryDownloadUrl(proof.fileUrl)} target="_blank" rel="noopener noreferrer" download>
+                          <Download className="w-4 h-4" />
+                        </a>
                       </Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" title="Copy Link" onClick={() => copyLink(proof.shareableLink || `${window.location.origin}/proof/${proof.id}`)}>
                         <LinkIcon className="w-4 h-4" />
@@ -487,9 +510,18 @@ export default function AdminProofsPage() {
                         {rev.rejectionReason && <p className="text-[8px] font-bold text-rose-500 italic truncate">Reason: {rev.rejectionReason}</p>}
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => window.open(rev.fileUrl, '_blank')}>
-                      <Eye className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" asChild>
+                        <a href={getCloudinaryPreviewUrl(rev.fileUrl)} target="_blank" rel="noopener noreferrer">
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" asChild>
+                        <a href={getCloudinaryDownloadUrl(rev.fileUrl)} target="_blank" rel="noopener noreferrer" download>
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

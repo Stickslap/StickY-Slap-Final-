@@ -111,6 +111,22 @@ export default function PublicProofPage() {
     }
   };
 
+  const getCloudinaryDownloadUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    if (url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  };
+
+  const getCloudinaryPreviewUrl = (url: string) => {
+    if (!url.includes('cloudinary.com')) return url;
+    if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().endsWith('.ai')) {
+      return url.replace(/\.(pdf|ai)$/i, '.jpg');
+    }
+    return url;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -151,7 +167,7 @@ export default function PublicProofPage() {
               {proof.status === 'rejected' && <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 text-sm py-1 px-3"><XCircle className="w-4 h-4 mr-2" /> Changes Requested</Badge>}
             </div>
             <Button variant="outline" size="sm" asChild>
-              <a href={proof.fileUrl} target="_blank" rel="noopener noreferrer" download>
+              <a href={getCloudinaryDownloadUrl(proof.fileUrl)} target="_blank" rel="noopener noreferrer" download>
                 <Download className="w-4 h-4 mr-2" /> Download Original
               </a>
             </Button>
@@ -159,24 +175,21 @@ export default function PublicProofPage() {
           
           <CardContent className="p-0">
             <div className="relative w-full aspect-video bg-black/5 flex items-center justify-center overflow-hidden">
-              {proof.fileUrl.toLowerCase().endsWith('.pdf') ? (
+              {proof.fileUrl.toLowerCase().endsWith('.pdf') || proof.fileUrl.toLowerCase().endsWith('.ai') ? (
                 <div className="w-full h-full flex flex-col items-center justify-center p-8">
-                  {/* Cloudinary PDF Preview Transformation: change .pdf to .jpg */}
                   <div className="relative w-full h-full max-h-[500px] shadow-2xl border rounded-lg overflow-hidden bg-white">
                     <Image 
-                      src={proof.fileUrl.replace(/\.pdf$/i, '.jpg')} 
-                      alt={`PDF Preview for ${proof.projectName}`}
+                      src={getCloudinaryPreviewUrl(proof.fileUrl)} 
+                      alt={`Preview for ${proof.projectName}`}
                       fill
                       className="object-contain"
                       referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        // If the JPG preview fails (e.g. not a Cloudinary URL or transformation failed), 
-                        // we could show a PDF icon or similar
-                        console.warn("PDF JPG preview failed, showing fallback");
-                      }}
+                      unoptimized
                     />
                   </div>
-                  <p className="mt-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">PDF Document Preview</p>
+                  <p className="mt-4 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                    {proof.fileUrl.toLowerCase().endsWith('.ai') ? 'Vector Artwork Preview' : 'Document Preview'}
+                  </p>
                 </div>
               ) : (
                 <Image 
@@ -185,6 +198,7 @@ export default function PublicProofPage() {
                   fill
                   className="object-contain"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               )}
             </div>
