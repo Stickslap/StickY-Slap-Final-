@@ -432,7 +432,13 @@ export default function CheckoutPage() {
           orderId: orderNumber,
           customerEmail: finalEmail,
           redirectUrl: `${window.location.origin}/checkout/success?id=${orderId}&email=${finalEmail}`,
-          items: cartItems
+          items: cartItems,
+          agreement: {
+            signedAt: new Date().toISOString(),
+            ipAddress: ipAddress,
+            fullName: finalName,
+            version: CONTRACT_VERSION
+          }
         });
 
         if (!paymentLinkResult.success || !paymentLinkResult.url) {

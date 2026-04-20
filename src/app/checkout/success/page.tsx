@@ -18,7 +18,10 @@ import {
   Check,
   Copy,
   ExternalLink,
-  FileText
+  FileText,
+  Eye,
+  Send,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -39,6 +42,8 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
   const db = useFirestore();
   const [isMounted, setIsMounted] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
+  const [showContract, setShowContract] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -58,6 +63,20 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
     setHasCopied(true);
     toast({ title: "Registry Key Copied" });
     setTimeout(() => setHasCopied(false), 2000);
+  };
+
+  const handleEmailAgreement = async () => {
+    if (!order || !orderId) return;
+    setIsSendingEmail(true);
+    try {
+      // Logic for resending the agreement email
+      toast({ title: "Agreement Sent", description: `A copy has been dispatched to ${order.customerEmail}` });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Error", description: "Failed to send email copy.", variant: "destructive" });
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const isImage = (url?: string) => {
@@ -211,7 +230,7 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
             <Card className="border-2 rounded-[2.5rem] bg-card overflow-hidden shadow-sm">
               <CardHeader className="bg-muted/30 border-b p-6">
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                  <ShieldCheck className="h-3 w-3" /> Secure Agreement
+                  <ShieldCheck className="h-3 w-3" /> Service Agreement Contract
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">

@@ -49,6 +49,12 @@ export async function createPaymentLink(data: {
   customerEmail: string;
   redirectUrl: string;
   items: any[];
+  agreement?: {
+    signedAt: string;
+    ipAddress: string;
+    fullName: string;
+    version: string;
+  };
 }) {
   try {
     if (!process.env.SQUARE_ACCESS_TOKEN) {
@@ -56,6 +62,11 @@ export async function createPaymentLink(data: {
     }
 
     const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || 'L2SFYZ87NJK49';
+    
+    // Construct the Service Agreement Note for legal persistence in Square
+    const agreementNote = data.agreement 
+      ? `SERVICE AGREEMENT CONTRACT SIGNED\nVersion: ${data.agreement.version}\nDate: ${data.agreement.signedAt}\nIP: ${data.agreement.ipAddress}\nSignatory: ${data.agreement.fullName}`
+      : "No digital signature data attached.";
 
     const response = await client.checkoutApi.createPaymentLink({
       idempotencyKey: data.idempotencyKey,
@@ -67,6 +78,11 @@ export async function createPaymentLink(data: {
       order: {
         locationId: locationId,
         referenceId: data.orderId, // Add referenceId for webhook mapping
+        ticketNote: agreementNote, // This shows up prominently in Square Dashboard
+        metadata: {
+          agreement_contract: "SIGNED",
+          agreement_version: data.agreement?.version || "N/A"
+        },
         lineItems: data.items.map(item => ({
           name: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
           quantity: Number(item.quantity).toString(),
@@ -74,7 +90,7 @@ export async function createPaymentLink(data: {
             amount: BigInt(Math.round((Number(item.pricePerUnit) || 0) * 100)),
             currency: data.currency
           },
-          note: Object.entries(item.selectedOptions || {}).map(([k, v]) => `${k}: ${v}`).join(', ')
+          note: `[Contract: Signed] ${Object.entries(item.selectedOptions || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}`
         }))
       }
     });

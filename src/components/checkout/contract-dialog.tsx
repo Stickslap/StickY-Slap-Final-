@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -8,7 +8,9 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Printer, ShieldCheck, FileText } from 'lucide-react';
+import { Printer, ShieldCheck, FileText, Download, Loader2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export const CONTRACT_VERSION = "2026.1";
 
@@ -30,9 +32,43 @@ interface ContractDialogProps {
 
 export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps) {
   const timestamp = data.timestamp || new Date().toLocaleString();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!contentRef.current) return;
+    setIsDownloading(true);
+    try {
+      const element = contentRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Sticky-Slap-Service-Agreement-${timestamp.replace(/[/\\?%*:|"<>]/g, '-')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -50,10 +86,13 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" onClick={handlePrint} className="rounded-xl h-12 w-12">
+              <Button variant="outline" size="icon" onClick={handleDownloadPDF} disabled={isDownloading} className="rounded-xl h-12 w-12 border-2">
+                {isDownloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={handlePrint} className="rounded-xl h-12 w-12 border-2">
                 <Printer className="h-5 w-5" />
               </Button>
-              <Button onClick={() => onOpenChange(false)} variant="ghost" className="rounded-xl h-12 px-6 font-black uppercase tracking-widest text-xs border-2">
+              <Button onClick={() => onOpenChange(false)} variant="ghost" className="rounded-xl h-12 px-6 font-black uppercase tracking-widest text-xs border-2 hover:bg-destructive hover:text-white transition-all">
                 Exit View —
               </Button>
             </div>
@@ -61,7 +100,7 @@ export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps
         </DialogHeader>
 
         <ScrollArea className="flex-1 bg-background">
-          <div className="max-w-4xl mx-auto w-full p-12 md:p-20">
+          <div className="max-w-4xl mx-auto w-full p-12 md:p-20" ref={contentRef}>
             <div className="prose prose-sm max-w-none text-muted-foreground space-y-12 font-medium leading-[1.8]" id="contract-content">
               <section className="text-center space-y-4 mb-20">
                 <h1 className="text-5xl md:text-6xl font-black uppercase italic tracking-tighter text-foreground leading-[0.9]">
