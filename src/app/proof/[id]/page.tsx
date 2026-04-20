@@ -58,6 +58,21 @@ export default function PublicProofPage() {
         status: 'approved',
         updatedAt: new Date().toISOString()
       });
+      
+      // If linked to an order, update order status to Approved
+      if (proof.orderId) {
+        try {
+          const orderRef = doc(db, 'orders', proof.orderId);
+          await updateDoc(orderRef, { 
+            status: 'Approved',
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`Order ${proof.orderId} moved to Approved status`);
+        } catch (orderErr) {
+          console.warn("Could not auto-update linked order status:", orderErr);
+        }
+      }
+
       console.log(`Proof ${proof.id} approved successfully`);
       setProof({ ...proof, status: 'approved' });
       toast({ title: 'Proof Approved', description: 'Thank you! Your approval has been recorded.' });
@@ -198,6 +213,26 @@ export default function PublicProofPage() {
                     <XCircle className="w-4 h-4" /> Requested Changes
                   </h3>
                   <p className="text-sm">{proof.rejectionReason}</p>
+                </div>
+              )}
+
+              {proof.history && proof.history.length > 0 && (
+                <div className="mt-12 pt-8 border-t">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Revision History</h3>
+                  <div className="space-y-4">
+                    {proof.history.map((rev, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-muted/20 border rounded-xl opacity-60">
+                        <div className="flex items-center gap-3">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-widest">Version {idx + 1}</p>
+                            <p className="text-[10px] text-muted-foreground">Uploaded: {new Date(rev.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] uppercase font-black uppercase tracking-widest">{rev.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
