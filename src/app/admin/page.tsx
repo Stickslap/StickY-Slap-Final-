@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const db = useFirestore();
   const { user } = useUser();
   const { isStaff, isSyncing } = useAdmin();
+  const isDev = user?.uid === 'Iit0JbEKytRkn35p4K0Rat6z4SE3' || (user?.email && ['atirndev@stickyslap.com', 'sticky@stickyslap.com', 'atirn.dev@gmail.com'].includes(user.email));
   const [isSeeding, setIsSeeding] = useState(false);
   const [timeframe, setTimeframe] = useState('Lifetime');
 
@@ -47,83 +48,97 @@ export default function AdminDashboard() {
   const { data: roleData } = useDoc<Role>(roleRef);
 
   const allOrdersQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || !roleData) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return collection(db, 'orders');
-  }, [db, user, isStaff, roleData]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const allUsersQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || !roleData) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return collection(db, 'users');
-  }, [db, user, isStaff, roleData]);
+  }, [db, user, isStaff, roleData, isDev]);
 
   const { data: allOrders, isLoading: isOrdersLoading, error: ordersError } = useCollection<Order>(allOrdersQuery);
   const { data: allUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(allUsersQuery);
   
   const ticketsQuery = useMemoFirebase(() => {
-    if (!user || !isStaff || !roleData) return null;
+    if (!user || !isStaff || (!roleData && !isDev)) return null;
     return collection(db, 'support_tickets');
-  }, [db, user, isStaff, roleData]);
+  }, [db, user, isStaff, roleData, isDev]);
   const { data: allTickets, isLoading: isTicketsLoading } = useCollection<SupportTicket>(ticketsQuery);
 
   const metrics = useMemo(() => {
     if (!allOrders || !allUsers) return null;
 
     const now = new Date();
-    
-    // Total Orders (Lifetime)
-    const totalOrders = allOrders.length;
+    let filteredOrders = allOrders;
+    let filteredUsers = allUsers;
 
-    // Active Orders (Not shipped)
-    const activeOrders = allOrders.filter(o => 
-      !['Shipped', 'Delivered', 'Closed', 'Cancelled', 'Refunded', 'Draft'].includes(o.status)
-    );
+    if (timeframe !== 'Lifetime') {
+      const days = timeframe === 'Monthly' ? 30 : timeframe === 'Weekly' ? 7 : 1;
+      const cutoff = subDays(now, days);
+      filteredOrders = allOrders.filter(o => new Date(o.createdAt || o.updatedAt) >= cutoff);
+      filteredUsers = allUsers.filter(u => new Date(u.createdAt) >= cutoff);
+    }
 
-    // New Customers (Signed up or placed an order in last 30 days)
-    const thirtyDaysAgo = subDays(now, 30);
-    const newCustomers = allUsers.filter(u => new Date(u.createdAt) >= thirtyDaysAgo).length;
+    console.log('Admin Dashboard Metrics Calculation (Filtered):', {
+      timeframe,
+      allOrdersCount: allOrders.length,
+      filteredOrdersCount: filteredOrders.length,
+      allUsersCount: allUsers.length,
+      allTicketsCount: allTickets?.length || 0
+    });
 
-    // Late Shipments (Based on delivery date)
+    // Total Orders in Process (Submitted status)
+    const inProcessOrders = filteredOrders.filter(o => o.status === 'Submitted');
+
+    // New Customers (Filtered by timeframe)
+    const newCustomers = filteredUsers.length;
+
+    // Late Shipments (Based on delivery date - using allOrders for accurate late count)
     const lateShipments = allOrders.filter(o => 
       o.estimate && 
       !['Delivered', 'Closed', 'Cancelled', 'Refunded', 'Draft'].includes(o.status) &&
       new Date(o.estimate.estimatedDeliveryDateMax) < now
     );
 
-    // Production Queue (Awaiting proof confirmation or approved)
-    const productionQueue = allOrders.filter(o => ['Proofing', 'Approved', 'In Production'].includes(o.status));
+    // Production Queue (Printing or Pending Approval - showing current status across all orders)
+    const productionQueue = allOrders.filter(o => ['Proofing', 'In Production'].includes(o.status));
 
-    // Attention Needed (Proof denied)
-    const attentionNeeded = allOrders.filter(o => o.status === 'Rejected');
+    // Support Tickets that need a reply (Showing all pending tickets regardless of order timeframe)
+    const pendingTickets = allTickets ? allTickets.filter(t => ['open', 'Waiting'].includes(t.status)) : [];
+
+    // Geographic Distribution (Based on filtered set)
+    const geoData: Record<string, number> = {};
+    filteredOrders.forEach(o => {
+      const location = o.shippingDetails?.state || o.shippingDetails?.city || 'Unknown';
+      geoData[location] = (geoData[location] || 0) + 1;
+    });
+    const sortedGeo = Object.entries(geoData)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
 
     return { 
-      totalOrders, 
-      activeOrdersCount: activeOrders.length, 
+      inProcessCount: inProcessOrders.length, 
       newCustomers, 
       lateShipmentsCount: lateShipments.length,
       productionQueue,
-      attentionNeeded
+      pendingTickets,
+      sortedGeo
     };
-  }, [allOrders, allUsers]);
+  }, [allOrders, allUsers, allTickets, timeframe]);
 
   const stats = [
     { 
-      title: 'Total Orders', 
-      value: metrics ? metrics.totalOrders.toString() : '0', 
-      change: 'Lifetime', 
+      title: 'In Process', 
+      value: metrics ? metrics.inProcessCount.toString() : '0', 
+      change: 'Submitted Status', 
       icon: Package, 
-      color: 'text-slate-500' 
-    },
-    { 
-      title: 'Active Orders', 
-      value: metrics ? metrics.activeOrdersCount.toString() : '0', 
-      change: 'Not yet shipped', 
-      icon: Printer, 
       color: 'text-blue-500' 
     },
     { 
-      title: 'New Customers', 
+      title: 'New Interactions', 
       value: metrics ? `+${metrics.newCustomers}` : '+0', 
-      change: 'Last 30 days', 
+      change: timeframe === 'Lifetime' ? 'All Time' : `Last ${timeframe === 'Monthly' ? '30 days' : timeframe === 'Weekly' ? '7 days' : '24 hours'}`, 
       icon: Users, 
       color: 'text-purple-500' 
     },
@@ -133,6 +148,13 @@ export default function AdminDashboard() {
       change: 'Past delivery date', 
       icon: AlertCircle, 
       color: metrics?.lateShipmentsCount && metrics.lateShipmentsCount > 0 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground' 
+    },
+    { 
+      title: 'Pending Tickets', 
+      value: metrics ? metrics.pendingTickets.length.toString() : '0', 
+      change: 'Awaiting Response', 
+      icon: Clock, 
+      color: 'text-amber-500' 
     },
   ];
 
@@ -258,7 +280,7 @@ export default function AdminDashboard() {
         <Card className="col-span-4 border-2 rounded-[2rem] overflow-hidden shadow-sm">
           <CardHeader className="bg-muted/30 border-b">
             <CardTitle className="text-lg font-black uppercase italic tracking-tight">Production Queue</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Orders awaiting proof or in production.</CardDescription>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Orders Printing or Pending Approval.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y-2">
@@ -284,29 +306,56 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 border-2 rounded-[2rem] overflow-hidden shadow-sm bg-rose-50 border-rose-100">
-          <CardHeader>
-            <CardTitle className="text-lg font-black uppercase italic tracking-tight text-rose-900">Attention Needed</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-rose-700">Orders with denied proofs.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!metrics || metrics.attentionNeeded.length === 0 ? (
-              <div className="text-center py-8 opacity-50">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
-                <p className="text-xs font-black uppercase tracking-widest mt-2">All good!</p>
-              </div>
-            ) : (
-              metrics.attentionNeeded.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-rose-200">
-                  <p className="text-xs font-black font-mono">#{order.id.slice(0, 8)}</p>
-                  <Button variant="outline" size="sm" asChild className="rounded-xl font-bold uppercase text-[9px] border-rose-200 text-rose-700">
-                    <Link href={`/admin/orders/${order.id}`}>Review —</Link>
-                  </Button>
+        <div className="col-span-3 flex flex-col gap-4">
+          <Card className="border-2 rounded-[2rem] overflow-hidden shadow-sm bg-rose-50 border-rose-100 flex-1">
+            <CardHeader>
+              <CardTitle className="text-lg font-black uppercase italic tracking-tight text-rose-900">Tickets Needed Reply</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-rose-700">Open or waiting support tickets.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!metrics || metrics.pendingTickets.length === 0 ? (
+                <div className="text-center py-8 opacity-50">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
+                  <p className="text-xs font-black uppercase tracking-widest mt-2">All tickets cleared!</p>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                metrics.pendingTickets.map((ticket) => (
+                  <div key={ticket.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-rose-200">
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-black uppercase truncate max-w-[120px]">{ticket.customerEmail}</p>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">{ticket.category}</p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild className="rounded-xl font-bold uppercase text-[9px] border-rose-200 text-rose-700 h-8">
+                      <Link href={`/admin/support/${ticket.id}`}>Reply —</Link>
+                    </Button>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 rounded-[2rem] overflow-hidden shadow-sm bg-blue-50 border-blue-100">
+            <CardHeader>
+              <CardTitle className="text-lg font-black uppercase italic tracking-tight text-blue-900">Geographic Heat</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-blue-700">Top states/cities by order count.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-8">
+              {!metrics || metrics.sortedGeo.length === 0 ? (
+                <p className="text-xs text-center italic opacity-30">No location data.</p>
+              ) : (
+                metrics.sortedGeo.map(([loc, count], idx) => (
+                  <div key={loc} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-blue-400 opacity-60">0{idx + 1}</span>
+                      <span className="text-xs font-black uppercase tracking-tight truncate max-w-[150px]">{loc}</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-white/80 border-blue-200 text-blue-800 text-[9px] font-black px-2">{count} Orders</Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

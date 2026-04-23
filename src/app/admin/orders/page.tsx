@@ -258,9 +258,8 @@ function OrdersPageContent() {
     );
     
     const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-    const isImported = order.metadata?.isImported === true;
     
-    return matchesSearch && matchesStatus && !isImported;
+    return matchesSearch && matchesStatus;
   });
 
   const totalPages = Math.ceil((filteredOrders?.length || 0) / itemsPerPage);

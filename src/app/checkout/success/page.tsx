@@ -21,8 +21,10 @@ import {
   FileText,
   Eye,
   Send,
-  Download
+  Download,
+  ShieldCheck
 } from 'lucide-react';
+import { ContractDialog } from '@/components/checkout/contract-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +33,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { Order, CheckoutSettings } from '@/lib/types';
+import { Order, CheckoutSettings, OrderStatus } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from '@/hooks/use-toast';
+import { updateDocumentNonBlocking } from '@/firebase';
 
 const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 
@@ -43,6 +46,7 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
   const [isMounted, setIsMounted] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [showContract, setShowContract] = useState(false);
+  const [triggerDownload, setTriggerDownload] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
@@ -51,6 +55,19 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
 
   const orderRef = useMemoFirebase(() => (orderId ? doc(db, 'orders', orderId) : null), [db, orderId]);
   const { data: order, isLoading } = useDoc<Order>(orderRef);
+  
+  const [hasUpdatedStatus, setHasUpdatedStatus] = useState(false);
+
+  useEffect(() => {
+    if (order && !hasUpdatedStatus && (order.status === 'Draft' || order.status === 'PendingPayment')) {
+      const orderDocRef = doc(db, 'orders', order.id);
+      updateDocumentNonBlocking(orderDocRef, { 
+        status: 'Submitted' as OrderStatus,
+        updatedAt: new Date().toISOString()
+      });
+      setHasUpdatedStatus(true);
+    }
+  }, [order, hasUpdatedStatus, db]);
 
   const appearanceRef = useMemoFirebase(() => doc(db, 'settings', 'appearance'), [db]);
   const { data: appearance } = useDoc<any>(appearanceRef);
@@ -241,6 +258,12 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
                   <Button variant="outline" size="sm" className="w-full text-[9px] font-black uppercase tracking-widest h-10" onClick={() => setShowContract(true)}>
                     <Eye className="mr-2 h-3.5 w-3.5" /> View Signed Agreement
                   </Button>
+                  <Button variant="secondary" size="sm" className="w-full text-[9px] font-black uppercase tracking-widest h-10" onClick={() => {
+                    setTriggerDownload(true);
+                    setShowContract(true);
+                  }}>
+                    <Download className="mr-2 h-3.5 w-3.5" /> Export Signature Pack
+                  </Button>
                   <Button variant="outline" size="sm" className="w-full text-[9px] font-black uppercase tracking-widest h-10" onClick={handleEmailAgreement} disabled={isSendingEmail}>
                     {isSendingEmail ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />} Email Copy —
                   </Button>
@@ -250,7 +273,11 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
 
             <ContractDialog 
               open={showContract} 
-              onOpenChange={setShowContract} 
+              onOpenChange={(open) => {
+                setShowContract(open);
+                if (!open) setTriggerDownload(false);
+              }} 
+              triggerDownload={triggerDownload}
               data={{
                 fullName: order.contractSignature?.fullName || '',
                 billingAddress: order.contractSignature?.billingAddress || '',

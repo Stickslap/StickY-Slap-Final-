@@ -160,6 +160,7 @@ export interface OrderItem {
   productId: string;
   productName: string;
   quantity: number;
+  pricePerUnit?: number;
   options: Record<string, string | number>;
   artworkUrl?: string;
   productThumbnail?: string;

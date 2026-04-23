@@ -17,6 +17,7 @@ export const CONTRACT_VERSION = "2026.1";
 interface ContractDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  triggerDownload?: boolean;
   data: {
     fullName: string;
     billingAddress: string;
@@ -30,10 +31,20 @@ interface ContractDialogProps {
   };
 }
 
-export function ContractDialog({ open, onOpenChange, data }: ContractDialogProps) {
+export function ContractDialog({ open, onOpenChange, triggerDownload, data }: ContractDialogProps) {
   const timestamp = data.timestamp || new Date().toLocaleString();
   const contentRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  React.useEffect(() => {
+    if (open && triggerDownload && !isDownloading) {
+      // Small delay to ensure rendering
+      const timer = setTimeout(() => {
+        handleDownloadPDF();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [open, triggerDownload]);
   
   const handlePrint = () => {
     window.print();

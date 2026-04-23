@@ -375,11 +375,12 @@ export default function CheckoutPage() {
       const orderData: any = {
         userId: finalUserId || null, 
         customerEmail: finalEmail || null, 
-        status: 'PendingPayment',
+        status: 'Draft',
         items: cartItems.map(item => ({
           productId: item.productId || null,
           productName: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
           quantity: Number(item.quantity) || 0,
+          pricePerUnit: Number(item.pricePerUnit) || 0,
           options: item.selectedOptions || {},
           artworkUrl: item.artworkUrl || null,
           productThumbnail: item.thumbnail || null
