@@ -9,9 +9,11 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == "sticky@stickyslap.com" ||
-        request.auth.token.email == "atirndev@stickyslap.com" ||
-        request.auth.token.email == "atirn.dev@gmail.com" ||
+        ("email" in request.auth.token && (
+          request.auth.token.email == "sticky@stickyslap.com" ||
+          request.auth.token.email == "atirndev@stickyslap.com" ||
+          request.auth.token.email == "atirn.dev@gmail.com"
+        )) ||
         (exists(/databases/$(database)/documents/roles/$(request.auth.uid)) && 
          (get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Admin' ||
           get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Staff'))
@@ -59,6 +61,11 @@ service cloud.firestore {
     }
 
     match /team/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /help_articles/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -122,6 +129,51 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rejectionReason', 'updatedAt']) &&
         (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
       );
+    }
+
+    // Order Activity
+    match /orders/{orderId}/activity/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /activity/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /pricing_rules/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /materials/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /linked_product_costing/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /material_usage/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /vendor_products/{document=**} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.vendorId == request.auth.uid);
+      allow write: if isAdmin() || (isAuthenticated() && request.resource.data.vendorId == request.auth.uid);
+    }
+
+    match /discounts/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /newsletter_subscribers/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /media_kit/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Default deny
