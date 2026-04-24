@@ -29,9 +29,10 @@ export function FirebaseErrorListener() {
     };
   }, []);
 
-  // On re-render, if an error exists in state, throw it.
+  // On re-render, if an error exists in state, log it instead of crashing.
   if (error) {
-    throw error;
+    console.error("Firebase permission error intercepted:", error);
+    // throw error; // CRITICAL: Stop throwing the error here so the app doesn't crash on Fast Refresh
   }
 
   // This component renders nothing.

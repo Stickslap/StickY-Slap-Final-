@@ -17,7 +17,7 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  const dbId = "ai-studio-73577978-c57a-4d16-9fca-7a635e2af192";
+  const dbId = firebaseConfig.firestoreDatabaseId || "(default)";
   console.log("Initializing Firestore with database ID:", dbId);
   let db;
   try {
