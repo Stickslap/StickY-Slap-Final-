@@ -88,17 +88,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Orders and Tickets
     match /orders/{orderId} {
       allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isAdmin();
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /support_tickets/{ticketId} {
       allow get: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
-      allow list: if isAdmin();
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.customerEmail == request.auth.token.email);
       allow create: if true; // Allow guests to create tickets
       allow update: if isAdmin();
     }
