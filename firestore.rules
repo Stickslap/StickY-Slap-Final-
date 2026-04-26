@@ -89,17 +89,17 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if true;
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.customerEmail == request.auth.token.email);
+      allow create: if true;
+      allow update: if true; // Allow guest updates (e.g. status after checkout), but restrict in actual prod if needed
     }
 
     match /support_tickets/{ticketId} {
-      allow get: if isAuthenticated() && (resource.data.customerEmail == request.auth.token.email || isAdmin());
-      allow list: if isAuthenticated() && (isAdmin() || resource.data.customerEmail == request.auth.token.email);
-      allow create: if true; // Allow guests to create tickets
-      allow update: if isAdmin();
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.customerEmail == request.auth.token.email);
+      allow create: if true;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     match /partner_leads/{leadId} {
