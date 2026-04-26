@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase'; // Assuming you have a firebase.ts that exports db
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import crypto from 'crypto';
 
 // This secret must match the one in your Square Developer Dashboard
 const WEBHOOK_SIGNATURE_KEY = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
 
 export async function POST(req: Request) {
+  const { firestore: db } = initializeFirebase();
   if (!WEBHOOK_SIGNATURE_KEY) {
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }

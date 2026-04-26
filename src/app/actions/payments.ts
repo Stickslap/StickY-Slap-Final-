@@ -71,14 +71,14 @@ export async function createPaymentLink(data: {
     const response = await client.checkoutApi.createPaymentLink({
       idempotencyKey: data.idempotencyKey,
       checkoutOptions: {
-        ask_for_shipping_address: true,
+        askForShippingAddress: true,
         redirectUrl: data.redirectUrl,
         merchantSupportEmail: "STICKY@STICKYSLAP.COM"
       },
       order: {
         locationId: locationId,
         referenceId: data.orderId, // Add referenceId for webhook mapping
-        ticketNote: agreementNote, // This shows up prominently in Square Dashboard
+        ticketName: agreementNote.substring(0, 30), // Needs to be short
         metadata: {
           agreement_contract: "SIGNED",
           agreement_version: data.agreement?.version || "N/A"

@@ -113,7 +113,7 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
     );
   }
 
-  if (!order || (email && order.customerEmail.toLowerCase() !== email.toLowerCase())) {
+  if (!order || (email && order.customerEmail?.toLowerCase() !== email.toLowerCase())) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center space-y-6">
         <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">

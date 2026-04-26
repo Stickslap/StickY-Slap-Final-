@@ -5,6 +5,8 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore } from 'firebase/firestore'
 
+let dbInstance: any = null;
+
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
   if (!getApps().length) {
@@ -26,6 +28,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
     // If it's already initialized, getFirestore will return it
     db = getFirestore(firebaseApp, dbId);
   }
+  dbInstance = db;
   console.log("Firestore initialized. Database ID:", (db as any)._databaseId || (db as any).databaseId || "unknown");
   return {
     firebaseApp,
@@ -33,6 +36,8 @@ export function getSdks(firebaseApp: FirebaseApp) {
     firestore: db
   };
 }
+
+export const db = dbInstance; // NOTE: On the server this might be null until initialized. Best to initialize before use.
 
 export * from './provider';
 export * from './client-provider';
