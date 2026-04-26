@@ -1,0 +1,1 @@
+require('child_process').execSync('killall -9 node');
