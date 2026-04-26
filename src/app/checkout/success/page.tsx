@@ -173,13 +173,13 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
-                {order.items.map((item, idx) => (
+                {order.items?.map((item, idx) => (
                   <div key={idx} className="flex gap-6">
                     <div className="shrink-0 flex gap-2">
                       <div className="h-20 w-20 relative rounded-2xl border-2 bg-muted/5 overflow-hidden shadow-sm flex items-center justify-center">
                         <Image 
                           src={item.productThumbnail || "https://picsum.photos/seed/placeholder/400/400"} 
-                          alt={item.productName} 
+                          alt={item.productName || 'Product'} 
                           fill 
                           className="object-contain p-2" 
                           unoptimized
@@ -208,7 +208,7 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
                         <Badge variant="secondary" className="font-black text-[10px]">QTY: {item.quantity}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(item.options).map(([k, v]) => (
+                        {item.options && Object.entries(item.options).map(([k, v]) => (
                           <Badge key={k} variant="outline" className="text-[8px] h-4 px-1.5 font-bold uppercase border-muted-foreground/20">
                             {v as string}
                           </Badge>
@@ -221,12 +221,12 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
                 <Separator />
 
                 <div className="space-y-4">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest"><span className="text-muted-foreground">Product Subtotal</span><span>${order.pricing.subtotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest"><span className="text-muted-foreground">Logistics & Handling</span><span>${order.pricing.shipping.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest"><span className="text-muted-foreground">Product Subtotal</span><span>${(order.pricing?.subtotal || 0).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest"><span className="text-muted-foreground">Logistics & Handling</span><span>${(order.pricing?.shipping || 0).toFixed(2)}</span></div>
                   <div className="pt-4">
                     <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-primary/10 flex justify-between items-center">
                       <span className="text-xs font-black uppercase tracking-[0.2em]">Total Transacted</span>
-                      <span className="text-3xl font-black font-headline italic tracking-tighter">${order.pricing.total.toFixed(2)}</span>
+                      <span className="text-3xl font-black font-headline italic tracking-tighter">${(order.pricing?.total || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
