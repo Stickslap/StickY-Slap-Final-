@@ -22,7 +22,7 @@ import {
   Eye,
   Send,
   Download,
-  Shield
+  ShieldCheck
 } from 'lucide-react';
 import { ContractDialog } from '@/components/checkout/contract-dialog';
 import { Button } from '@/components/ui/button';
@@ -247,7 +247,7 @@ function ConfirmationContent({ orderId, email }: { orderId: string | null, email
             <Card className="border-2 rounded-[2.5rem] bg-card overflow-hidden shadow-sm">
               <CardHeader className="bg-muted/30 border-b p-6">
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                  <Shield className="h-3 w-3" /> Service Agreement Contract
+                  <ShieldCheck className="h-3 w-3" /> Service Agreement Contract
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">

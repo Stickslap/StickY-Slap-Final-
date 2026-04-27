@@ -1,161 +1,183 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * SOCIETY SECURITY PROTOCOL: FORTRESS 2.0
-     * Hardened Attribute-Based Access Control (ABAC)
-     */
-
-    // --- Global Helpers ---
-    function isSignedIn() { return request.auth != null; }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$'); }
     
-    function isStaff() {
-      return isSignedIn() && request.auth.token.email != null && (
-        request.auth.token.email.lower() == "sticky@stickyslap.com"
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        ("email" in request.auth.token && (
+          request.auth.token.email == "sticky@stickyslap.com" ||
+          request.auth.token.email == "atirndev@stickyslap.com" ||
+          request.auth.token.email == "atirn.dev@gmail.com"
+        )) ||
+        (exists(/databases/$(database)/documents/roles/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Admin' ||
+          get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'Staff'))
       );
     }
 
-    function isAnyAdmin() {
-      return isStaff();
+    // Publicly readable collections
+    match /shipping_options/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /products/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isEmailMatch(dbEmail, tokenEmail) {
-      return dbEmail != null && tokenEmail != null && dbEmail is string && tokenEmail is string && (
-        dbEmail == tokenEmail || dbEmail.lower() == tokenEmail.lower()
-      );
+    match /gallery {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /gallery/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    match /blogs/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isOrderAccessible(data) {
-      return isSignedIn() && (
-        (data.get('userId', '') != null && data.get('userId', '') != '' && data.get('userId', '') == request.auth.uid) || 
-        isEmailMatch(data.get('customerEmail', ''), request.auth.token.get('email', ''))
-      );
+    match /blog_posts/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // --- Entity Validations ---
-
-    function isValidOrder(d) {
-      return d.keys().hasAll(['status', 'createdAt', 'pricing', 'items']) &&
-             d.status is string && d.status.size() <= 64 &&
-             d.pricing is map &&
-             d.items is list;
+    match /faqs/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isValidTicket(d) {
-      return d.keys().hasAll(['subject', 'status', 'createdAt', 'customerEmail']) &&
-             d.subject is string && d.subject.size() <= 200 &&
-             d.customerEmail is string && d.customerEmail.size() <= 128;
+    match /team/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isValidUser(d) {
-      return d.keys().hasAll(['email', 'createdAt']) &&
-             d.email is string && d.email.size() <= 128;
+    match /help_articles/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    function isValidActivity(d) {
-      return d.keys().hasAll(['timestamp', 'action']) &&
-             d.action is string && d.action.size() <= 128;
+    // Live Visitors (Analytics)
+    match /live_visitors/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
 
-    // --- Collection Routes ---
+    // User profiles and roles
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
 
     match /roles/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
-      allow list: if isAnyAdmin();
-      allow create: if isAnyAdmin() || (isOwner(userId) && incoming().role in ['Vendor', 'Customer']);
-      allow update, delete: if isAnyAdmin();
-    }
-
-    match /live_visitors/{visitorId} {
-      allow read, list: if true; 
-      allow create, update: if true; 
-      allow delete: if isAnyAdmin();
-    }
-
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAnyAdmin();
-      allow create: if isAnyAdmin() || (isValidId(userId) && isValidUser(incoming()));
-      allow update: if isAnyAdmin() || (isOwner(userId) && 
-                    isValidId(userId) && 
-                    isValidUser(incoming()) && 
-                    incoming().email == existing().email);
-      allow delete: if isAnyAdmin();
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
     }
 
     match /orders/{orderId} {
-      allow get: if true; 
-      allow list: if isAnyAdmin() || (isSignedIn() && (isOrderAccessible(resource.data) || isOwner(resource.data.get('userId', ''))));
-      allow create: if isAnyAdmin() || (isValidId(orderId) && isValidOrder(incoming()));
-      
-      allow update: if isAnyAdmin() || (isValidId(orderId) && isValidOrder(incoming()) && (
-        (isSignedIn() && (
-          // Action: Customer Update (Own Order)
-          (existing().get('userId', '') == request.auth.uid && incoming().get('userId', '') == request.auth.uid) ||
-          // Action: Customer Claim (By Email)
-          (isOrderAccessible(existing()) && (existing().get('userId', '') == null || existing().get('userId', '') == '' || existing().get('userId', '') == request.auth.uid))
-        )) ||
-        (
-          // Action: Payment Status Promotion
-          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
-          incoming().status == 'Submitted' &&
-          (existing().status == 'Draft' || existing().status == 'Payment Pending')
-        )
-      ));
-      
-      match /activity/{logId} {
-        allow read: if isAnyAdmin() || (isSignedIn() && isOrderAccessible(get(/databases/$(database)/documents/orders/$(orderId)).data));
-        allow create: if true; 
-      }
+      allow get: if true;
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid || ("email" in request.auth.token && resource.data.customerEmail == request.auth.token.email));
+      allow create: if true;
+      allow update: if true;
     }
 
     match /support_tickets/{ticketId} {
-      allow list, get: if isAnyAdmin() || (isSignedIn() && isOrderAccessible(resource.data));
-      allow create: if isAnyAdmin() || isValidTicket(incoming());
-      allow update: if isAnyAdmin() || (isValidTicket(incoming()) && isSignedIn() && isOrderAccessible(existing()));
-      allow delete: if isAnyAdmin();
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || ("email" in request.auth.token && resource.data.customerEmail == request.auth.token.email) || isAdmin());
+      allow list: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid || ("email" in request.auth.token && resource.data.customerEmail == request.auth.token.email));
+      allow create: if true;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    match /activity/{logId} {
-      allow read: if isAnyAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow create: if true; 
-      allow update, delete: if isAnyAdmin();
+    match /partner_leads/{leadId} {
+      allow read: if isAdmin();
+      allow create: if true; // Public can submit leads
+      allow update: if isAdmin();
     }
 
-    // General Resource Rules
-    match /products/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /pricing_rules/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /settings/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /gallery/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /discounts/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /blogs/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /blog_posts/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /help_categories/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /help_articles/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /media_kit/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /shipping_options/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /email_templates/{id} { allow read: if true; allow write: if isAnyAdmin(); }
-    match /newsletter_subscribers/{id} { allow create: if true; allow read, write: if isAnyAdmin(); }
-    match /partner_leads/{id} { allow create: if true; allow read, write: if isAnyAdmin(); }
-    match /vendor_products/{id} { allow read: if true; allow write: if isSignedIn(); }
-    match /shareable_links/{id} { allow read: if true; allow write: if isAnyAdmin(); }
+    match /shareable_links/{linkId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
-    // Industrial / Inventory System
-    match /materials/{id} { allow read, write: if isAnyAdmin(); }
-    match /material_usage/{id} { allow read, write: if isAnyAdmin(); }
-    match /linked_product_costing/{id} { allow read, write: if isAnyAdmin(); }
+    match /email_templates/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
-    // --- Final Security Layer ---
-    // Absolute redundancy for administrative access.
+    match /client_proofs/{proofId} {
+      allow get: if true; // Publicly readable via direct link
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow public to update status and rejectionReason if currently pending
+      allow update: if isAdmin() || (
+        resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rejectionReason', 'updatedAt']) &&
+        (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
+      );
+    }
+
+    // Order Activity
+    match /orders/{orderId}/activity/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /activity/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /pricing_rules/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /materials/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /linked_product_costing/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /material_usage/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /vendor_products/{document=**} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.vendorId == request.auth.uid);
+      allow write: if isAdmin() || (isAuthenticated() && request.resource.data.vendorId == request.auth.uid);
+    }
+
+    match /discounts/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /newsletter_subscribers/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /media_kit/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Default deny
     match /{document=**} {
-      allow read, write: if isAnyAdmin();
+      allow read, write: if false;
     }
   }
 }
