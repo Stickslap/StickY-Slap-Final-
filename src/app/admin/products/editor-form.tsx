@@ -70,6 +70,7 @@ import { toast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking } from '@/firebase';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { createBigCommerceProduct } from '@/lib/bigcommerce';
 
 const CLOUDINARY_CLOUD_NAME = "dabgothkm";
 const CLOUDINARY_UPLOAD_PRESET = "unsigned_upload";
@@ -381,6 +382,23 @@ export function ProductEditorForm({ initialData, isNew }: { initialData?: Partia
             details: `Created new ${data.segment}: ${data.name}`,
             timestamp: new Date().toISOString()
           });
+
+          // Sync product to BigCommerce (only for new products)
+          try {
+            const bcProduct = {
+              name: data.name || "Custom Product",
+              type: "physical",
+              weight: 0.1,
+              price: data.pricingModel?.basePrice || 0,
+              description: data.longDescription || data.shortDescription || "",
+              is_visible: data.status === 'Active',
+            };
+            createBigCommerceProduct(bcProduct).catch(e => {
+              console.warn("Failed to push to BC:", e);
+            });
+          } catch (e) {
+            console.warn("BC error:", e);
+          }
         }
       });
       toast({ title: "Product Created" });

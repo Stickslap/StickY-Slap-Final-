@@ -52,6 +52,8 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { getFriendlyErrorMessage, logError } from '@/lib/error-handler';
 import { ContractDialog, CONTRACT_VERSION } from '@/components/checkout/contract-dialog';
+import { getCartFile, removeCartFile } from '@/lib/idb';
+import { createBigCommerceOrder } from '@/lib/bigcommerce';
 
 const SQUARE_APP_ID = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "sq0idp-zBKDnTXilwoxRhQx6CDOjw";
 const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "L2SFYZ87NJK49";
@@ -71,6 +73,8 @@ const DEFAULT_SETTINGS: ShippingSettings = {
 
 const DEFAULT_LOGO = "https://res.cloudinary.com/dabgothkm/image/upload/v1743789000/sticky-slap-logo.png";
 const DEFAULT_THUMBNAIL = "https://picsum.photos/seed/society-item/400/400";
+const CLOUDINARY_CLOUD_NAME = "dabgothkm";
+const CLOUDINARY_UPLOAD_PRESET = "unsigned_upload";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -371,12 +375,38 @@ export default function CheckoutPage() {
           storeCredit: 0 
         }, { merge: true });
       }
+
+      const uploadedCartItems = await Promise.all(cartItems.map(async (item) => {
+        try {
+          const file = await getCartFile(item.cartId);
+          if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', `orders/${orderId}`);
+            
+            const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+              method: 'POST',
+              body: formData
+            });
+
+            if (uploadRes.ok) {
+              const uploadData = await uploadRes.json();
+              await removeCartFile(item.cartId).catch(() => {});
+              return { ...item, artworkUrl: uploadData.secure_url };
+            }
+          }
+        } catch (e) {
+          console.error("Failed to upload cart artwork", e);
+        }
+        return item; // Fallback to whatever URL was there (e.g. preview base64 or null)
+      }));
       
       const orderData: any = {
         userId: finalUserId || null, 
         customerEmail: finalEmail || null, 
         status: 'Draft',
-        items: cartItems.map(item => ({
+        items: uploadedCartItems.map(item => ({
           productId: item.productId || null,
           productName: item.productName?.replace(/\s*\(Copy\)$/i, '') || 'Custom Print',
           quantity: Number(item.quantity) || 0,
@@ -425,6 +455,34 @@ export default function CheckoutPage() {
 
       setDocumentNonBlocking(newOrderRef, orderData, { merge: true });
 
+      try {
+        const bcOrderPayload = {
+          status_id: 1, // Incomplete/Pending
+          billing_address: {
+            first_name: identity.firstName || finalName.split(' ')[0] || "Customer",
+            last_name: identity.lastName || finalName.split(' ')[1] || "",
+            email: finalEmail,
+            street_1: shippingAddress.street,
+            city: shippingAddress.city,
+            state: shippingAddress.state,
+            zip: shippingAddress.zip,
+            country_iso2: "US"
+          },
+          products: uploadedCartItems.map(item => ({
+            name: item.productName || 'Custom Print',
+            quantity: item.quantity,
+            price_inc_tax: item.pricePerUnit,
+            price_ex_tax: item.pricePerUnit,
+          })),
+          staff_notes: `Firebase Order ID: ${orderId}\n` + uploadedCartItems.map(item => 
+            `Artwork for ${item.productName}: ${item.artworkUrl || 'N/A'}`
+          ).join("\n")
+        };
+        await createBigCommerceOrder(bcOrderPayload);
+      } catch (e) {
+        console.warn("Failed to sync order to BigCommerce", e);
+      }
+
       if (pricing.total > 0) {
         const paymentLinkResult = await createPaymentLink({
           amount: pricing.total,
@@ -433,7 +491,12 @@ export default function CheckoutPage() {
           orderId: orderNumber,
           customerEmail: finalEmail,
           redirectUrl: `${window.location.origin}/checkout/success?id=${orderId}&email=${finalEmail}`,
-          items: cartItems,
+          items: uploadedCartItems.map(item => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            pricePerUnit: item.pricePerUnit,
+            selectedOptions: item.selectedOptions || {}
+          })),
           agreement: {
             signedAt: new Date().toISOString(),
             ipAddress: ipAddress,

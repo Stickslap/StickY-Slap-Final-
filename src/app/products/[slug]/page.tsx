@@ -86,9 +86,7 @@ import { ProductTemplate, EmailTemplate } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from '@/hooks/use-toast';
-
-const CLOUDINARY_CLOUD_NAME = "dabgothkm";
-const CLOUDINARY_UPLOAD_PRESET = "unsigned_upload";
+import { saveCartFile } from '@/lib/idb';
 
 function ProductDetailContent({ slug }: { slug: string }) {
   const router = useRouter();
@@ -271,39 +269,8 @@ function ProductDetailContent({ slug }: { slug: string }) {
       } else {
         setArtworkPreview(null);
       }
-      setIsUploadingArtwork(true);
-      setUploadProgress(0);
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        formData.append('folder', `artwork/pending/${user?.uid || 'guest'}`);
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, true);
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress((event.loaded / event.total) * 100);
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            setFinalArtworkUrl(response.secure_url);
-            setIsUploadingArtwork(false);
-            toast({ title: "Artwork Synchronized", description: "File successfully ingested." });
-          } else {
-            toast({ title: "Sync Failed", description: "Could not upload artwork.", variant: "destructive" });
-            setIsUploadingArtwork(false);
-          }
-        };
-        xhr.onerror = () => {
-          toast({ title: "Sync Failed", description: "Network error during upload.", variant: "destructive" });
-          setIsUploadingArtwork(false);
-        };
-        xhr.send(formData);
-      } catch (err) {
-        setIsUploadingArtwork(false);
-      }
+      toast({ title: "Artwork Accepted", description: "Your file is ready for checkout." });
+      setFinalArtworkUrl('pending_upload');
     }
   };
 
@@ -375,13 +342,13 @@ function ProductDetailContent({ slug }: { slug: string }) {
     return quantity > selectedSize.maxYardage;
   }, [purchaseMode, selectedSize, quantity, isRollLayout]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     if (isInventoryBreach || isCapBreach) {
       toast({ title: "Procurement Blocked", description: "Requested quantity exceeds available stock.", variant: "destructive" });
       return;
     }
-    if (!finalArtworkUrl && product.artworkRequirements?.required && !isRollLayout) {
+    if (!artworkFile && product.artworkRequirements?.required && !isRollLayout) {
       toast({ title: "Artwork Required", description: "Please upload your design before proceeding.", variant: "destructive" });
       return;
     }
@@ -416,8 +383,16 @@ function ProductDetailContent({ slug }: { slug: string }) {
       }
     }
 
+    const cartId = Math.random().toString(36).substr(2, 9);
+    
+    if (artworkFile) {
+      await saveCartFile(cartId, artworkFile).catch(() => {
+        toast({ title: 'System Error', description: 'Failed to cache your file.', variant: 'destructive' });
+      });
+    }
+
     const cartItem = {
-      cartId: Math.random().toString(36).substr(2, 9),
+      cartId,
       productId: product.id,
       productName: product.name,
       category: product.category,
@@ -433,7 +408,7 @@ function ProductDetailContent({ slug }: { slug: string }) {
       },
       pricePerUnit: currentPricePerUnit,
       thumbnail: product.thumbnail || allImages[0],
-      artworkUrl: finalArtworkUrl,
+      artworkUrl: artworkPreview,
       isProofRequired: product.proofing?.required !== false && !isRollLayout,
       slug: product.slug
     };
@@ -447,9 +422,9 @@ function ProductDetailContent({ slug }: { slug: string }) {
     });
   };
 
-  const handleProceedToCheckout = () => {
-    handleAddToCart();
+  const handleProceedToCheckout = async () => {
     setIsProceeding(true);
+    await handleAddToCart();
     router.push('/checkout');
   };
 
